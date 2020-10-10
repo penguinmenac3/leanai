@@ -3,6 +3,8 @@
 
 * [Fashion MNIST Simple
 ](examples/mnist_simple.md)
+* [Fashion MNIST with custom dataset
+](examples/mnist_custom_dataset.md)
 * [Fashion MNIST with custom loss
 ](examples/mnist_custom_loss.md)
 * [Fashion MNIST with custom model

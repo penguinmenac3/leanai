@@ -35,7 +35,7 @@ class FashionMNISTConfig(Config):
         self.training_trainer = SupervisedTrainer
         self.training_epochs = 10
 
-
+# Should be in a loss.py
 class MyLoss(Module):
     def __init__(self, config=None, model=None):
         super().__init__()

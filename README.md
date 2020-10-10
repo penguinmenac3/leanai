@@ -31,7 +31,7 @@ Starting with tutorials is usually easiest.
 * [Fasion MNIST: Custom Model](examples/mnist_custom_model.py)
 * [Fasion MNIST: Custom Loss](examples/mnist_custom_loss.py)
 * **TODO** [Fasion MNIST: Custom Optimizer](examples/mnist_custom_optimizer.py)
-* **TODO** [Fasion MNIST: Custom Dataset](examples/mnist_custom_dataset.py)
+* [Fasion MNIST: Custom Dataset](examples/mnist_custom_dataset.py)
 
 
 ### Fashion MNIST

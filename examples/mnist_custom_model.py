@@ -32,6 +32,7 @@ class FashionMNISTConfig(Config):
         self.training_batch_size = 32
 
 
+# Should be in a model.py
 class ImageClassifierSimple(Module):
     def __init__(self, config):
         super().__init__()
