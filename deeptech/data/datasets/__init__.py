@@ -1,0 +1,1 @@
+from deeptech.data.datasets.fashion_mnist_dataset import FashionMNISTDataset
