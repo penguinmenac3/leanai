@@ -2,17 +2,17 @@
 
 > A library that helps with writing ai functions fast.
 
-It ships with a full [Documentation](docs/README.md) of its API and [Examples](examples).
+It ships with a full [Documentation](docs/README.md) of its API and [Examples](deeptech/examples).
 
 ## Getting Started
 
 Please make sure you have pytorch installed properly as a first step.
 
 ```bash
-pip install git+https://github.com/penguinmenac3/deeptech.git
+pip install deeptech
 ```
 
-Then follow one of the [examples](examples) or check out the [api documentation](docs/README.md).
+Then follow one of the [examples](deeptech/examples) or check out the [api documentation](docs/README.md).
 
 ## Design Principles
 
@@ -25,13 +25,15 @@ The api builds on three core parts: Data, Model or Training. Some parts which ar
 
 ## Tutorials & Examples
 
-Starting with tutorials is usually easiest.
+Starting with tutorials and examples is usually easiest.
 
-* [Fasion MNIST: Simple](examples/mnist_simple.py)
-* [Fasion MNIST: Custom Model](examples/mnist_custom_model.py)
-* [Fasion MNIST: Custom Loss](examples/mnist_custom_loss.py)
-* **TODO** [Fasion MNIST: Custom Optimizer](examples/mnist_custom_optimizer.py)
-* [Fasion MNIST: Custom Dataset](examples/mnist_custom_dataset.py)
+Simple Fashion MNIST Examples:
+
+* [Fasion MNIST: Simple](deeptech/examples/mnist_simple.py)
+* [Fasion MNIST: Custom Model](deeptech/examples/mnist_custom_model.py)
+* [Fasion MNIST: Custom Loss](deeptech/examples/mnist_custom_loss.py)
+* **TODO** [Fasion MNIST: Custom Optimizer](deeptech/examples/mnist_custom_optimizer.py)
+* [Fasion MNIST: Custom Dataset](deeptech/examples/mnist_custom_dataset.py)
 
 
 ### Fashion MNIST
@@ -79,6 +81,7 @@ if __name__ == "__main__":
 Currently there are no guidelines on how to contribute, so the best thing you can do is open up an issue and get in contact that way.
 In the issue we can discuss how you can implement your new feature or how to fix that nasty bug.
 
+To contribute, please fork the repositroy on github, then clone your fork. Make your changes and submit a merge request.
 
 ## Origin of the Name
 
