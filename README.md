@@ -88,3 +88,8 @@ Thus, I decided to name it as a tribute to that hackathon.
 
 And besides, the name does not seem to be used for any company or library and sounds cool, at least to me.
 ;)
+
+
+## License
+
+This repository is under MIT License. Please see the [full license here](LICENSE).
