@@ -3,8 +3,9 @@
 
 > An implemntation of a simple image classifier.
 """
+from deeptech.model.layers.pooling import MaxPooling2D
 from torch.nn import Module
-from deeptech.model.layers import Conv2D, Flatten, Dense, ImageConversion, Activation, Sequential
+from deeptech.model.layers import Conv2D, Flatten, Dense, ImageConversion, Activation, Sequential, BatchNormalization
 
 
 class ImageClassifierSimple(Module):
@@ -16,12 +17,14 @@ class ImageClassifierSimple(Module):
         for filters in self.config.model_conv_layers:
             layers.append(Conv2D(kernel_size=(3, 3), filters=filters))
             layers.append(Activation("relu"))
+            layers.append(MaxPooling2D())
+            layers.append(BatchNormalization())
         layers.append(Flatten())
         for outputs in self.config.model_dense_layers:
             layers.append(Dense(outputs))
             layers.append(Activation("relu"))
         layers.append(Dense(self.config.model_classes))
-        layers.append(Activation("softmax", dim=1))
+        #layers.append(Activation("softmax", dim=1))
         self.layers = Sequential(*layers)
 
     def forward(self, image):

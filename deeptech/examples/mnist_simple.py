@@ -23,8 +23,8 @@ class FashionMNISTConfig(Config):
 
         # Config of the model
         self.model_model = ImageClassifierSimple
-        self.model_conv_layers = [32, 32, 32]
-        self.model_dense_layers = [100]
+        self.model_conv_layers = [12, 18, 18, 18]
+        self.model_dense_layers = [18]
         self.model_classes = 10
 
         # Config for training

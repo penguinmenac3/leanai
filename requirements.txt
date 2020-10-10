@@ -1,3 +1,5 @@
 numpy
 tensorboardX
 packaging
+imageio
+matplotlib

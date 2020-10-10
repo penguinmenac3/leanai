@@ -6,7 +6,7 @@ This example shows how to solve fashion MNIST with a custom model.
 First we import everything, then we write the config, then we implement the custom model and finaly we tell deeptech to run this.
 """
 from deeptech.data.datasets import FashionMNISTDataset
-from deeptech.model.layers import Conv2D, Flatten, Dense, ImageConversion, Activation, Sequential
+from deeptech.model.layers import Conv2D, Flatten, Dense, ImageConversion, Activation, Sequential, BatchNormalization, MaxPooling2D
 from deeptech.training.trainers import SupervisedTrainer
 from deeptech.training.losses import SparseCrossEntropyLossFromLogits
 from deeptech.training.optimizers import smart_optimizer
@@ -39,14 +39,24 @@ class ImageClassifierSimple(Module):
         self.config = config
         self.layers = Sequential(
             ImageConversion(standardize=False, to_channel_first=True),
-            Conv2D(kernel_size=(3, 3), filters=32),
+            Conv2D(kernel_size=(3, 3), filters=12),
             Activation("relu"),
-            Conv2D(kernel_size=(3, 3), filters=32),
+            MaxPooling2D(),
+            BatchNormalization(),
+            Conv2D(kernel_size=(3, 3), filters=18),
             Activation("relu"),
-            Conv2D(kernel_size=(3, 3), filters=32),
+            MaxPooling2D(),
+            BatchNormalization(),
+            Conv2D(kernel_size=(3, 3), filters=18),
             Activation("relu"),
+            MaxPooling2D(),
+            BatchNormalization(),
+            Conv2D(kernel_size=(3, 3), filters=18),
+            Activation("relu"),
+            MaxPooling2D(),
+            BatchNormalization(),
             Flatten(),
-            Dense(100),
+            Dense(18),
             Activation("relu"),
             Dense(10),
             Activation("softmax", dim=1)
