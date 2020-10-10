@@ -1,6 +1,10 @@
-from deeptech.core.definitions import PHASE_TRAIN
-import os
+"""doc
+# deeptech.training.callbacks.tensorboard_callback
 
+> Takes care of flushing the tensorboard module at the right times.
+"""
+import os
+from deeptech.core.definitions import PHASE_TRAIN
 from tensorboardX import SummaryWriter
 from deeptech.core.logging import get_log_path, create_checkpoint_structure
 from deeptech.training.callbacks.base_callback import BaseCallback
@@ -9,6 +13,15 @@ from deeptech.training import tensorboard
 
 class TensorboardCallback(BaseCallback):
     def __init__(self, train_log_steps=100, initial_samples_seen=0, log_std=False, log_min=False, log_max=False):
+        """
+        Flushes the tensorboard module after n steps.
+
+        :param train_log_steps: (int) The number of steps after how many a flush of tensorboard should happen the latest. (At end of epoch it might happen earlier.)
+        :param initial_samples_seen: (int) The number of samples the model has seen at launch time. (Starting point on the x axis.)
+        :param log_std: (bool) True if the standard deviation of the loss should be logged.
+        :param log_min: (bool) True if the minimums of the loss should be logged.
+        :param log_max: (bool) True if the maximums of the loss should be logged.
+        """
         super().__init__()
         self.train_log_steps = train_log_steps
         self.samples_seen = initial_samples_seen

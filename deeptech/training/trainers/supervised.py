@@ -1,5 +1,5 @@
 """doc
-# deeptech.training.supervised
+# deeptech.training.trainers.supervised
 
 > A trainer for supervised approaches.
 """

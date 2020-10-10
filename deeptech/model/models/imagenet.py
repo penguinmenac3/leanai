@@ -1,5 +1,5 @@
 """doc
-# deeptech.model.imagenet
+# deeptech.model.models.imagenet
 
 > An implemntation of various imagenet models.
 """

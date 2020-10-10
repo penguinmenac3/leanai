@@ -1,3 +1,8 @@
+"""doc
+# deeptech.data.datasets.fashion_mnist_dataset
+
+> An implementation of a dataset for fashion mnist.
+"""
 import numpy as np
 from collections import namedtuple
 from torchvision.datasets import FashionMNIST

@@ -9,7 +9,7 @@ It ships with a full [Documentation](docs/README.md) of its API and [Examples](e
 Please make sure you have pytorch installed properly as a first step.
 
 ```bash
-pip install git+https://github.com/penguinmenac3/experimental-ai.git
+pip install git+https://github.com/penguinmenac3/deeptech.git
 ```
 
 Then follow one of the [examples](examples) or check out the [api documentation](docs/README.md).
@@ -49,22 +49,23 @@ from torch.optim import SGD
 
 
 class FashionMNISTConfig(Config):
-    def __init__(self, name, input_folder, output_folder):
-        super().__init__(name, input_folder, output_folder)
+    def __init__(self, training_name, data_path, training_results_path):
+        super().__init__(training_name, data_path, training_results_path)
         # Config of the data
         self.data_dataset = FashionMNISTDataset
 
         # Config of the model
         self.model_model = ImageClassifierSimple
-        self.model_conv_layers = 3
-        self.model_dense_layers = 1
+        self.model_conv_layers = [32, 32, 32]
+        self.model_dense_layers = [100]
         self.model_classes = 10
 
         # Config for training
-        self.training_loss = SparseCrossEntropyFromLogits
+        self.training_loss = SparseCrossEntropyLossFromLogits
         self.training_optimizer = smart_optimizer(SGD)
         self.training_trainer = SupervisedTrainer
         self.training_epochs = 10
+        self.training_batch_size = 32
 
 
 # Run with parameters parsed from commandline.

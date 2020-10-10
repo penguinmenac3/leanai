@@ -1,5 +1,5 @@
 """doc
-# deeptech.model.layers.dense
+# deeptech.model.layers.image_conversion
 
 > A simple fully connected layer (aka Linear Layer or Dense).
 """

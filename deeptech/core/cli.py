@@ -1,3 +1,10 @@
+"""doc
+# deeptech.core.cli
+
+> The command line interface for deeptech.
+
+By using this package you will not need to write your own main for most networks. This helps reduce boilerplate code.
+"""
 import argparse
 import os
 import deeptech.core.logging as logging
@@ -47,10 +54,27 @@ __implementations__ = {"train": _train}
 
 
 def set(name, function):
+    """
+    Set a new mode for the cli execution.
+
+    The mode 'train' is preimplemented but can be overwritten, if a custom one is required.
+
+    :param name: (str) The name of the mode made available to the command line.
+    :param function: (str) The function to call when the mode is selected via a command line argument.
+    """
     __implementations__[name] = function
 
 
 def run_manual(mode, config, state_dict=None):
+    """
+    Run the cli interface manually by giving a config and a state dict.
+
+    This can be helpfull when working with notebooks, where you have no command line.
+
+    :param mode: (str) The mode to start.
+    :param config: (Config) The configuration instance that is used.
+    :param state_dict: (Optional[str]) If provided this checkpoint will be restored in the trainer/model.
+    """
     if mode in __implementations__ and __implementations__[mode] is not None:
         __implementations__[mode](config, state_dict)
     else:
@@ -58,6 +82,15 @@ def run_manual(mode, config, state_dict=None):
 
 
 def run(config_class=None):
+    """
+    Run the cli interface.
+
+    Parses the command line arguments (also provides a --help parameter).
+
+    :param config_class: (Optional[Class]) A pointer to a class definition of a config.
+        If provided there is no config parameter for the command line.
+        Else the config specified in the command line will be loaded and instantiated.
+    """
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description='The main entry point for the script.')
     parser.add_argument('--mode', type=str, required=True, help='What mode should be run, trian or test.')

@@ -1,5 +1,10 @@
-from deeptech.core.definitions import PHASE_TRAIN
+"""doc
+# deeptech.training.callbacks.log_callback
+
+> A callback that takes care of logging the progress (to the console).
+"""
 import time
+from deeptech.core.definitions import PHASE_TRAIN
 from deeptech.core.logging import info, log_progress, status, create_checkpoint_structure, get_log_path, warn
 from deeptech.training.callbacks.base_callback import BaseCallback
 from deeptech.training import tensorboard
@@ -13,6 +18,11 @@ def _format_time(t):
 
 class LogCallback(BaseCallback):
     def __init__(self, train_log_steps=100):
+        """
+        Logs the current status of the training to the console and logfile.
+
+        :param train_log_steps: (int) The number of steps that should pass between each logging operation. This is to avoid spamming the log.
+        """
         super().__init__()
         self.start_time = 0
         self.epoch_start_time = 0

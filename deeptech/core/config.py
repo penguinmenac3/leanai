@@ -26,6 +26,8 @@ class Config(object):
         * `self.training_initial_lr = 0.001`: The learning rate that is initialy used by the optimizer.
         * `self.training_results_path = training_results_path`: The path where training results are stored is set to what is passed in the constructor. 
         * `self.training_name = training_name`: The name that is used for the experiment is set to what is passed in the constructor.
+        * `self.training_callbacks = DEFAULT_TRAINING_CALLBACKS`: A list of callbacks that are used in the order they appear in the list by the trainer.
+        * `self.training_lr_scheduler = None`: A learning rate scheduler that is used by the trainer to update the learning rate.
 
         Arguments:
         :param training_name: (str) The name how to name your experiment.
