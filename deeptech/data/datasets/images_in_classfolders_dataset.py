@@ -1,5 +1,5 @@
 """doc
-# deeptech.data.datasets.images_in_classfolders
+# deeptech.data.datasets.images_in_classfolders_dataset
 
 > An implementation of a dataset where the images are stored in folders which have the class names.
 """
