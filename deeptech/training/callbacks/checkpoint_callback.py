@@ -12,7 +12,7 @@ from deeptech.core.checkpoint import save_state
 
 
 class CheckpointCallback(BaseCallback):
-    def __init__(self, keep_only_best_and_latest=True, file_format="numpy"):
+    def __init__(self, keep_only_best_and_latest=True, file_format="pytorch"):
         """
         Create checkpoints at the end of each epoch.
 

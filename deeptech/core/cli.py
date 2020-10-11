@@ -6,6 +6,7 @@
 By using this package you will not need to write your own main for most networks. This helps reduce boilerplate code.
 """
 import argparse
+from deeptech.core.checkpoint import load_weights
 import os
 import deeptech.core.logging as logging
 from deeptech.core.config import import_config
@@ -18,7 +19,7 @@ def _setup_logging(name, config):
     logging.set_logger(os.path.join(config.training_results_path, logging.get_timestamp() + name, "log.txt"))
 
 
-def _train(config, state_dict):
+def _train(config, load_checkpoint, load_model):
     """
     The main training loop.
     """
@@ -33,6 +34,9 @@ def _train(config, state_dict):
         model.initialized_model = True
         features, _ = next(iter(train_data))
         model(**features._asdict())
+    if load_model is not None:
+        logging.info("Loading model: {}".format(load_model))
+        load_weights(load_model, model)
 
     loss = config.training_loss(config=config, model=model)
     optim = config.training_optimizer(config=config, model=model, loss=loss)
@@ -45,8 +49,8 @@ def _train(config, state_dict):
         train_data=train_data,
         val_data=val_data
     )
-    if state_dict is not None:
-        trainer.restore(state_dict)
+    if load_checkpoint is not None:
+        trainer.restore(load_checkpoint)
     trainer.fit(epochs=config.training_epochs)
 
 
@@ -65,7 +69,7 @@ def set(name, function):
     __implementations__[name] = function
 
 
-def run_manual(mode, config, state_dict=None):
+def run_manual(mode, config, load_checkpoint=None, load_model=None):
     """
     Run the cli interface manually by giving a config and a state dict.
 
@@ -73,10 +77,11 @@ def run_manual(mode, config, state_dict=None):
 
     :param mode: (str) The mode to start.
     :param config: (Config) The configuration instance that is used.
-    :param state_dict: (Optional[str]) If provided this checkpoint will be restored in the trainer/model.
+    :param load_checkpoint: (Optional[str]) If provided this checkpoint will be restored in the trainer/model.
+    :param load_model: (Optional[str]) If provided this model will be loaded.
     """
     if mode in __implementations__ and __implementations__[mode] is not None:
-        __implementations__[mode](config, state_dict)
+        __implementations__[mode](config, load_checkpoint, load_model)
     else:
         raise RuntimeError(f"Unknown mode {mode}. There is no implementation for this mode set.")
 
@@ -98,7 +103,8 @@ def run(config_class=None):
     parser.add_argument('--output', type=str, required=True, help='Folder where to save the results.')
     if config_class is None:
         parser.add_argument('--config', type=str, required=True, help='Configuration to use.')
-    parser.add_argument('--state_dict', type=str, required=False, help='Absolute path to the state dict (weights) of the network.')
+    parser.add_argument('--load_checkpoint', type=str, required=False, help='Path to the checkpoint (model, loss, optimizer, trainer state) to load.')
+    parser.add_argument('--load_model', type=str, required=False, help='Path to the model weights to load.')
     parser.add_argument('--name', type=str, default="", required=False, help='Name to give the run.')
     parser.add_argument('--device', type=str, default=None, required=False, help='CUDA device id')
     args = parser.parse_args()
@@ -109,7 +115,8 @@ def run(config_class=None):
     logging.info(f"Arg: --output {args.output}")
     if config_class is None:
         logging.info(f"Arg: --config {args.config}")
-    logging.info(f"Arg: --state_dict {args.state_dict}")
+    logging.info(f"Arg: --load_checkpoint {args.load_checkpoint}")
+    logging.info(f"Arg: --load_model {args.load_model}")
     logging.info(f"Arg: --name {args.name}")
     logging.info(f"Arg: --device {args.device}")
 
@@ -120,4 +127,4 @@ def run(config_class=None):
         config = import_config(args.name, args.input, args.output)
     else:
         config = config_class(args.name, args.input, args.output)
-    run_manual(args.mode, config, args.state_dict)
+    run_manual(args.mode, config, args.load_checkpoint, args.load_model)

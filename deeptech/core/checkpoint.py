@@ -3,8 +3,10 @@
 
 > Loading and saving checkpoints with babilim.
 """
+import os
 import numpy as np
 from typing import Dict
+from deeptech.core import logging
 
 
 def load_state(checkpoint_path: str) -> Dict:
@@ -12,14 +14,15 @@ def load_state(checkpoint_path: str) -> Dict:
     Load the state from a checkpoint.
     
     :param checkpoint_path: The path to the file in which the checkpoint is stored.
-    :param file_format: (Optional[str]) The format in which the checkpoint was stored. (Default: "numpy")
     :return: A dict containing the states.
     """
+    if not os.path.exists(checkpoint_path):
+        raise RuntimeError("Checkpoint path does not exist. Please provide a path to a *.pth or *.npy file. You provided: {}".format(checkpoint_path))
     if checkpoint_path.endswith(".pth"):
         import torch
         return torch.load(checkpoint_path, map_location='cpu')
     elif checkpoint_path.endswith(".npz"):
-        data = np.load(checkpoint_path, allow_pickle=False)
+        data = np.load(checkpoint_path, allow_pickle=True)
         out = {}
         prefixes = list(set([key.split("/")[0] for key in list(data.keys())]))
         for prefix in prefixes:
@@ -31,6 +34,22 @@ def load_state(checkpoint_path: str) -> Dict:
         return out
     else:
         raise NotImplementedError()
+
+
+def load_weights(checkpoint_path: str, model):
+    """
+    Load the weights from a checkpoint into a model.
+    
+    :param checkpoint_path: The path to the file in which the checkpoint is stored.
+    :param model: The model for which to set the state from the checkpoint.
+    """
+    checkpoint = load_state(checkpoint_path)
+    if "model" in checkpoint:
+        if logging.DEBUG_VERBOSITY:
+            logging.info("Load Model...")
+        model.load_state_dict(checkpoint["model"])
+    else:
+        logging.warn("Could not find model_state in checkpoint.")
 
 
 def save_state(data, checkpoint_path, file_format: str = "numpy"):

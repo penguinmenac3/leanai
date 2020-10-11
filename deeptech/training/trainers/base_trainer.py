@@ -40,28 +40,27 @@ class BaseTrainer(object):
 
     def restore(self, state_dict_path):
         # Load Checkpoint
-        if os.path.exists(state_dict_path):
-            logging.info("Loading checkpoint: {}".format(state_dict_path))
-            checkpoint = load_state(state_dict_path)
-            self.epoch = checkpoint["epoch"] + 1
-            if "model" in checkpoint:
-                if logging.DEBUG_VERBOSITY:
-                    logging.info("Load Model...")
-                self.model.load_state_dict(checkpoint["model"])
-            else:
-                logging.warn("Could not find model_state in checkpoint.")
-            if "optimizer" in checkpoint:
-                if logging.DEBUG_VERBOSITY:
-                    logging.info("Load Optimizer...")
-                self.optimizer.load_state_dict(checkpoint["optimizer"])
-            else:
-                logging.warn("Could not find optimizer_state in checkpoint.")
-            if "loss" in checkpoint:
-                if logging.DEBUG_VERBOSITY:
-                    logging.info("Load Loss...")
-                self.loss.load_state_dict(checkpoint["loss"])
-            else:
-                logging.warn("Could not find loss_state in checkpoint.")
+        logging.info("Loading checkpoint: {}".format(state_dict_path))
+        checkpoint = load_state(state_dict_path)
+        self.epoch = checkpoint["epoch"] + 1
+        if "model" in checkpoint:
+            if logging.DEBUG_VERBOSITY:
+                logging.info("Load Model...")
+            self.model.load_state_dict(checkpoint["model"])
+        else:
+            logging.warn("Could not find model_state in checkpoint.")
+        if "optimizer" in checkpoint:
+            if logging.DEBUG_VERBOSITY:
+                logging.info("Load Optimizer...")
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
+        else:
+            logging.warn("Could not find optimizer_state in checkpoint.")
+        if "loss" in checkpoint:
+            if logging.DEBUG_VERBOSITY:
+                logging.info("Load Loss...")
+            self.loss.load_state_dict(checkpoint["loss"])
+        else:
+            logging.warn("Could not find loss_state in checkpoint.")
 
         if logging.DEBUG_VERBOSITY:
             logging.info("Trainable Variables:")
