@@ -33,3 +33,19 @@ class FashionMNISTDataset(Dataset):
 
     def _get_version(self) -> str:
         return "FashionMnistDataset"
+
+
+def test_visualization(data_path):
+    from deeptech.core.config import Config
+    import matplotlib.pyplot as plt
+    config = Config(training_name="test_visualization", data_path=data_path, training_results_path="test")
+    dataset = FashionMNISTDataset(config, SPLIT_TRAIN)
+    image, class_id = dataset[0]
+    plt.title(class_id.class_id)
+    plt.imshow(image[0])
+    plt.show()
+
+
+if __name__ == "__main__":
+    import sys
+    test_visualization(sys.argv[1])
