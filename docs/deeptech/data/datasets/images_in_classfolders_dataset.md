@@ -2,14 +2,14 @@
 
 
 
-# deeptech.data.datasets.fashion_mnist_dataset
+# deeptech.data.datasets.images_in_classfolders
 
-> An implementation of a dataset for fashion mnist.
+> An implementation of a dataset where the images are stored in folders which have the class names.
 
 
 ---
 ---
-## *class* **FashionMNISTDataset**(Dataset)
+## *class* **ImagesInClassfoldersDataset**(Dataset)
 
 *(no documentation found)*
 

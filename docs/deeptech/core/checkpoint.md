@@ -13,8 +13,16 @@
 Load the state from a checkpoint.
 
 * **checkpoint_path**: The path to the file in which the checkpoint is stored.
-* **file_format**: (Optional[str]) The format in which the checkpoint was stored. (Default: "numpy")
 * **returns**: A dict containing the states.
+
+
+---
+### *def* **load_weights**(checkpoint_path: str, model)
+
+Load the weights from a checkpoint into a model.
+
+* **checkpoint_path**: The path to the file in which the checkpoint is stored.
+* **model**: The model for which to set the state from the checkpoint.
 
 
 ---

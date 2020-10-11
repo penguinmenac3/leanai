@@ -19,6 +19,9 @@ Built-in Attributes:
 * `self.data_path = data_path`: The path where data is stored is set to what is passed in the constructor.
 * `self.data_loader_shuffle = True`: If the dataloader used for training should shuffle the data.
 * `self.data_loader_num_threads = 0`: How many threads the dataloader should use. (0 means no multithreading and is most stable)
+* `self.data_train_split = 0.6`: The split used for training.
+* `self.data_val_split = 0.2`: The split used for validation.
+* `self.data_test_split = 0.2`: The split used for testing.
 * `self.training_batch_size = 1`: The batch size used for training the neural network. This is required for the dataloader from the dataset.
 * `self.training_epochs = 1`: The number epochs for how many a training should run.
 * `self.training_initial_lr = 0.001`: The learning rate that is initialy used by the optimizer.

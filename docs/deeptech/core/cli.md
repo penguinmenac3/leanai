@@ -21,7 +21,7 @@ The mode 'train' is preimplemented but can be overwritten, if a custom one is re
 
 
 ---
-### *def* **run_manual**(mode, config, state_dict=None)
+### *def* **run_manual**(mode, config, load_checkpoint=None, load_model=None)
 
 Run the cli interface manually by giving a config and a state dict.
 
@@ -29,7 +29,8 @@ This can be helpfull when working with notebooks, where you have no command line
 
 * **mode**: (str) The mode to start.
 * **config**: (Config) The configuration instance that is used.
-* **state_dict**: (Optional[str]) If provided this checkpoint will be restored in the trainer/model.
+* **load_checkpoint**: (Optional[str]) If provided this checkpoint will be restored in the trainer/model.
+* **load_model**: (Optional[str]) If provided this model will be loaded.
 
 
 ---

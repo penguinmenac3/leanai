@@ -27,8 +27,12 @@
 ](deeptech/core/logging.md)
 * [deeptech.data.dataset
 ](deeptech/data/dataset.md)
+* [deeptech.data.datasets.casia_faces_dataset
+](deeptech/data/datasets/casia_faces_dataset.md)
 * [deeptech.data.datasets.fashion_mnist_dataset
 ](deeptech/data/datasets/fashion_mnist_dataset.md)
+* [deeptech.data.datasets.images_in_classfolders
+](deeptech/data/datasets/images_in_classfolders_dataset.md)
 * [deeptech.data.transformer
 ](deeptech/data/transformer.md)
 * [deeptech.model.layers.activation

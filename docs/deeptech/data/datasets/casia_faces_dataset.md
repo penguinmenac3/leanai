@@ -2,19 +2,14 @@
 
 
 
-# deeptech.data.datasets.fashion_mnist_dataset
+# deeptech.data.datasets.casia_faces_dataset
 
-> An implementation of a dataset for fashion mnist.
+> An implementation of a dataset for the casia webfaces.
 
-
----
----
-## *class* **FashionMNISTDataset**(Dataset)
-
-*(no documentation found)*
 
 ---
-### *def* **get_image**(*self*, sample_token)
+---
+## *class* **CasiaFacesDataset**(ImagesInClassfoldersDataset)
 
 *(no documentation found)*
 
