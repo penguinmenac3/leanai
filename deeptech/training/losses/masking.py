@@ -27,7 +27,7 @@ class NaNMaskedLoss(Module):
         :param y_pred: The predictions of the network. Either a NamedTuple pointing at ITensors or a Dict or Tuple of ITensors.
         :param y_true: The desired outputs of the network (labels). Either a NamedTuple pointing at ITensors or a Dict or Tuple of ITensors.
         """
-        binary_mask = (~y_true.is_nan())
+        binary_mask = (~y_true.isnan())
         mask = binary_mask.float()
         masked_y_true = (y_true * mask)[binary_mask]
         shape = list(y_true.shape)
