@@ -8,7 +8,7 @@ from torch import Tensor
 from deeptech.core.definitions import PHASE_TRAIN, PHASE_VAL
 from deeptech.training.trainers.base_trainer import BaseTrainer
 from deeptech.training import tensorboard
-from deeptech.core.logging import error
+from deeptech.core.logging import error, warn
 
 
 class SupervisedTrainer(BaseTrainer):
@@ -66,16 +66,20 @@ class SupervisedTrainer(BaseTrainer):
                         raise ValueError("NetworkOutput {} got nan.".format(name))
             loss_result = self.loss(y_true=targets, y_pred=network_output)
             tensorboard.log_scalar("loss/total", loss_result)
-            
-            if loss_result.isnan().any():
-                error("NaN Loss")
-                raise ValueError("Loss got nan.")
 
-            if phase == "train":
-                loss_result.backward()
-                self.optimizer.step()
-                if self.config.training_lr_scheduler is not None:
-                    self.config.training_lr_scheduler.step()
+            if loss_result == 0:
+                print()
+                warn("Loss is exactly 0, is this a bug?")
+            else:
+                if loss_result.isnan().any():
+                    error("NaN Loss")
+                    raise ValueError("Loss got nan.")
+
+                if phase == "train":
+                    loss_result.backward()
+                    self.optimizer.step()
+                    if self.config.training_lr_scheduler is not None:
+                        self.config.training_lr_scheduler.step()
 
             for callback in self.callbacks:
                 callback.on_iter_end(network_output, loss_result)
