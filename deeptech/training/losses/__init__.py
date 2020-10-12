@@ -1,2 +1,3 @@
 from deeptech.training.losses.classification import BinaryCrossEntropyLossFromLogits, SparseCrossEntropyLossFromLogits, SparseCategoricalAccuracy
 from deeptech.training.losses.masking import NaNMaskedLoss
+from deeptech.training.losses.regression import SmoothL1Loss
