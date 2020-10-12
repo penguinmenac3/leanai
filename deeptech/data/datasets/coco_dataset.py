@@ -3,6 +3,7 @@
 
 > An implementation of the coco dataset.
 """
+from deeptech.data.visualizations.plot_boxes import plot_boxes_on_image
 import numpy as np
 import os
 import cv2
@@ -13,7 +14,7 @@ from deeptech.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 
 
 InputType = namedtuple("Input", ["image"])
-OutputType = namedtuple("Output", ["class_ids", "box_centers", "box_sizes", "masks"])
+OutputType = namedtuple("Output", ["class_ids", "boxes", "polygons"])
 
 
 class COCODataset(Dataset):
@@ -56,30 +57,25 @@ class COCODataset(Dataset):
         
     def get_image(self, sample_token):
         image = cv2.imread(os.path.join(self.image_folder, sample_token))[:,:,::-1]
-        return image
+        return np.copy(image)
 
     def get_class_ids(self, sample_token):
         annos = self.annotations[sample_token]
         class_ids = []
         for anno in annos:
             class_ids.append(anno["category_id"])
-        return class_ids
+        return np.array(class_ids)
 
-    def get_box_centers(self, sample_token):
+    def get_boxes(self, sample_token):
         annos = self.annotations[sample_token]
-        centers = []
+        boxes = []
         for anno in annos:
-            centers.append(anno["bbox"][:2])
-        return centers
+            center = [c + s//2 for c, s in zip(anno["bbox"][:2], anno["bbox"][2:])]
+            size = anno["bbox"][2:]
+            boxes.append(center + size)
+        return np.array(boxes)
 
-    def get_box_sizes(self, sample_token):
-        annos = self.annotations[sample_token]
-        sizes = []
-        for anno in annos:
-            sizes.append(anno["bbox"][2:])
-        return sizes
-
-    def get_masks(self, sample_token):
+    def get_polygons(self, sample_token):
         annos = self.annotations[sample_token]
         masks = []
         for anno in annos:
@@ -97,10 +93,12 @@ def test_visualization(data_path):
     config.data_version = "2014"
     dataset = COCODataset(config, SPLIT_TRAIN)
     search_class = 88 # Teddy bear
-    for image, target in dataset:
+    for inputs, target in dataset:
         if search_class in target.class_ids:
             plt.title(target.class_ids)
-            plt.imshow(image[0])
+            image = inputs.image
+            image = plot_boxes_on_image(image, target.boxes)
+            plt.imshow(image)
             plt.show()
 
 if __name__ == "__main__":
