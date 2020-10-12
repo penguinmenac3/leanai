@@ -73,7 +73,10 @@ def log_scalar(key, value):
     :param value: (Union[Tensor, float, int]) The value that should be logged.
     """
     if isinstance(value, Tensor):
-        value = value.detach().numpy()
+        value = value.detach()
+        if value.device != "cpu":
+            value = value.cpu()
+        value = value.numpy()
     if key not in _accumulators:
         _accumulators[key] = []
     _accumulators[key].append(value)

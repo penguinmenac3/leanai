@@ -204,7 +204,7 @@ class Dataset(Sequence):
         :return: The type will be torch.utils.data.DataLoader.
         """
         from deeptech.data.dataloader_pytorch import BatchedPytorchDataset
-        return BatchedPytorchDataset(self, self.config, self.config.data_loader_shuffle, self.config.data_loader_num_threads)
+        return BatchedPytorchDataset(self, self.config, self.config.data_loader_shuffle, self.config.data_loader_num_threads, self.config.data_device)
 
     def to_disk(self, cache_path: str, verbose: bool = True) -> None:
         """
