@@ -124,7 +124,11 @@ def run(config_class=None):
         os.environ['CUDA_VISIBLE_DEVICES'] = args.device
 
     if config_class is None:
-        config = import_config(args.name, args.input, args.output)
+        config = import_config(args.config, args.name, args.input, args.output)
     else:
         config = config_class(args.name, args.input, args.output)
     run_manual(args.mode, config, args.load_checkpoint, args.load_model)
+
+
+if __name__ == "__main__":
+    run()
