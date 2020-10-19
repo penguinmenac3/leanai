@@ -39,6 +39,9 @@ class TensorboardCallback(BaseCallback):
         self.train_summary_txt = os.path.join(get_log_path(), "train", "log.txt")
         self.dev_summary_writer = SummaryWriter(os.path.join(get_log_path(), "val"))
         self.dev_summary_txt = os.path.join(get_log_path(), "val", "log.txt")
+
+        self.train_summary_writer.add_graph(model, *next(iter(train_dataloader)))
+        self.dev_summary_writer.add_graph(model, *next(iter(dev_dataloader)))
         return start_epoch
 
     def on_fit_end(self) -> None:

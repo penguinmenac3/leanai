@@ -33,7 +33,7 @@ def _train(config, load_checkpoint, load_model):
             logging.info("Build Model")
         model.initialized_model = True
         features, _ = next(iter(train_data))
-        model(**features._asdict())
+        model(*features)
     if load_model is not None:
         logging.info("Loading model: {}".format(load_model))
         load_weights(load_model, model)

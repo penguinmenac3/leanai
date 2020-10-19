@@ -54,7 +54,7 @@ class SupervisedTrainer(BaseTrainer):
 
             # Forward pass, computing gradients and applying them
             self.optimizer.zero_grad()
-            network_output = self.model(**network_inputs._asdict())
+            network_output = self.model(*network_inputs)
             if isinstance(network_output, Tensor):
                     if network_output.isnan().any():
                         error("NaN NetworkOutput: {}".format(network_output))
