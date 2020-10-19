@@ -5,7 +5,7 @@
 """
 import os
 from deeptech.core.definitions import PHASE_TRAIN
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from deeptech.core.logging import get_log_path, create_checkpoint_structure
 from deeptech.training.callbacks.base_callback import BaseCallback
 from deeptech.training import tensorboard
