@@ -59,8 +59,7 @@ class BinaryCrossEntropyLossFromLogits(Module):
             y_true = y_true.class_id
         if not isinstance(y_pred, Tensor):
             y_pred = y_pred.class_id
-        y_true = y_true.long()
-        return self.loss_fun(y_pred, y_true[:, 0])
+        return self.loss_fun(y_pred, y_true)
 
 
 class SparseCategoricalAccuracy(Module):
