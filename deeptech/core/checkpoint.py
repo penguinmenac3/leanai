@@ -9,6 +9,23 @@ from typing import Dict
 from deeptech.core import logging
 
 
+def init_model(model, dataloader):
+    """
+    Initialize the model, so that the checkpoints can be loaded.
+
+    This is done by running the forward pass once with an example.
+
+    :param model: The model that should be initialized.
+    :param dataloader: A dataloader that can be used to get a sample to feed through the network for full initialization.
+    """
+    if not getattr(model, "initialized_model", False):
+        if logging.DEBUG_VERBOSITY:
+            logging.info("Build Model")
+        model.initialized_model = True
+        features, _ = next(iter(dataloader))
+        model(*features)
+
+
 def load_state(checkpoint_path: str) -> Dict:
     """
     Load the state from a checkpoint.

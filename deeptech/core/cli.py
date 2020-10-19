@@ -6,10 +6,10 @@
 By using this package you will not need to write your own main for most networks. This helps reduce boilerplate code.
 """
 import argparse
-from deeptech.core.checkpoint import load_weights
 import os
 import deeptech.core.logging as logging
 from deeptech.core.config import import_config
+from deeptech.core.checkpoint import init_model, load_weights
 from deeptech.core.definitions import SPLIT_TRAIN, SPLIT_VAL
 
 
@@ -27,13 +27,7 @@ def _train(config, load_checkpoint, load_model):
     train_data = config.data_dataset(config=config, split=SPLIT_TRAIN).to_pytorch()
     val_data = config.data_dataset(config=config, split=SPLIT_VAL).to_pytorch()
     model = config.model_model(config=config)
-    # Actually force model to be build by running one forward step
-    if not getattr(model, "initialized_model", False):
-        if logging.DEBUG_VERBOSITY:
-            logging.info("Build Model")
-        model.initialized_model = True
-        features, _ = next(iter(train_data))
-        model(*features)
+    init_model(model, train_data)
     if load_model is not None:
         logging.info("Loading model: {}".format(load_model))
         load_weights(load_model, model)
