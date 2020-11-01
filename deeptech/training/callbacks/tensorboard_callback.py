@@ -6,7 +6,7 @@
 import os
 from deeptech.core.definitions import PHASE_TRAIN
 from torch.utils.tensorboard import SummaryWriter
-from deeptech.core.logging import get_log_path, create_checkpoint_structure
+from deeptech.core.logging import get_log_path, create_checkpoint_structure, warn
 from deeptech.training.callbacks.base_callback import BaseCallback
 from deeptech.training import tensorboard
 
@@ -40,8 +40,11 @@ class TensorboardCallback(BaseCallback):
         self.dev_summary_writer = SummaryWriter(os.path.join(get_log_path(), "val"))
         self.dev_summary_txt = os.path.join(get_log_path(), "val", "log.txt")
 
-        self.train_summary_writer.add_graph(model, *next(iter(train_dataloader)))
-        self.dev_summary_writer.add_graph(model, *next(iter(dev_dataloader)))
+        try:
+            self.train_summary_writer.add_graph(model, *next(iter(train_dataloader)))
+            self.dev_summary_writer.add_graph(model, *next(iter(dev_dataloader)))
+        except:
+            warn("Cannot log model. Does it use **kwargs instead of *args somewhere?")
         return start_epoch
 
     def on_fit_end(self) -> None:
