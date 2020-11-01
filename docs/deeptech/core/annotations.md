@@ -7,6 +7,14 @@
 > A collection of helpful annotations.
 
 
+
+
+A class decorator is a base class that is used for all annotations that should be usable with python classes.
+Regular annotations will not work with classes.
+
+This is a helper class that can be used when writing annotations.
+
+
 ---
 ---
 ## *class* **RunOnlyOnce**(_ClassDecorator)

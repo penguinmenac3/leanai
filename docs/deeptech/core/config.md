@@ -22,6 +22,7 @@ Built-in Attributes:
 * `self.data_train_split = 0.6`: The split used for training.
 * `self.data_val_split = 0.2`: The split used for validation.
 * `self.data_test_split = 0.2`: The split used for testing.
+* `self.data_device = "cpu"`: The device on which the data should be loaded (use "cuda" for GPU).
 * `self.training_batch_size = 1`: The batch size used for training the neural network. This is required for the dataloader from the dataset.
 * `self.training_epochs = 1`: The number epochs for how many a training should run.
 * `self.training_initial_lr = 0.001`: The learning rate that is initialy used by the optimizer.

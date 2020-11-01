@@ -8,6 +8,17 @@
 
 
 ---
+### *def* **init_model**(model, dataloader)
+
+Initialize the model, so that the checkpoints can be loaded.
+
+This is done by running the forward pass once with an example.
+
+* **model**: The model that should be initialized.
+* **dataloader**: A dataloader that can be used to get a sample to feed through the network for full initialization.
+
+
+---
 ### *def* **load_state**(checkpoint_path: str) -> Dict
 
 Load the state from a checkpoint.

@@ -17,6 +17,14 @@ A transformer is a callable that gets the data (usually a tuple of feature, labe
 The last transformer must output a tuple of feature of type NetworkInput (namedtuple) and label of type NetworkOutput (namedtuple) for babilim to be able to pass it to the neural network.
 
 
+
+
+This function gets the data from the previous transformer or dataset as input and should output the data again.
+
+* **args**: The input data.
+* **returns**: The output data.
+
+
 ---
 ### *def* **version**(*self*)
 

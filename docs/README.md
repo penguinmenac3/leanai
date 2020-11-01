@@ -37,6 +37,8 @@
 ](deeptech/data/datasets/images_in_classfolders_dataset.md)
 * [deeptech.data.transformer
 ](deeptech/data/transformer.md)
+* [deeptech.data.visualizations.plot_boxes
+](deeptech/data/visualizations/plot_boxes.md)
 * [deeptech.model.layers.activation
 ](deeptech/model/layers/activation.md)
 * [deeptech.model.layers.batch_normalization
@@ -77,6 +79,8 @@
 ](deeptech/training/losses/classification.md)
 * [deeptech.training.losses.masking
 ](deeptech/training/losses/masking.md)
+* [deeptech.training.losses.regression
+](deeptech/training/losses/regression.md)
 * [deeptech.training.optimizers._smart_optimizer
 ](deeptech/training/optimizers/_smart_optimizer.md)
 * [deeptech.training.tensorboard

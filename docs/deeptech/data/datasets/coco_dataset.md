@@ -24,17 +24,12 @@
 *(no documentation found)*
 
 ---
-### *def* **get_box_centers**(*self*, sample_token)
+### *def* **get_boxes**(*self*, sample_token)
 
 *(no documentation found)*
 
 ---
-### *def* **get_box_sizes**(*self*, sample_token)
-
-*(no documentation found)*
-
----
-### *def* **get_masks**(*self*, sample_token)
+### *def* **get_polygons**(*self*, sample_token)
 
 *(no documentation found)*
 

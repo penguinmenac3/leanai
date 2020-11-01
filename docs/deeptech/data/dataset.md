@@ -74,6 +74,15 @@ Property that returns the version of the dataset.
 * **returns**: The version number of the dataset.
 
 
+
+
+Get the version string of the dataset.
+
+**Must be overwritten by every subclass.**
+
+* **returns**: The version number of the dataset.
+
+
 ---
 ### *def* **to_keras**(*self*)
 

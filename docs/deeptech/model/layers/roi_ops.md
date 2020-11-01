@@ -7,6 +7,14 @@
 > Operations for region of interest extraction.
 
 
+
+
+Convert rois into the torchvision format.
+
+* **boxes**: The roi boxes as a native tensor[B, K, 4].
+* **returns**: The roi boxes in the format that roi pooling and roi align in torchvision require. Native tensor[B*K, 5].
+
+
 ---
 ---
 ## *class* **RoiPool**(Module)

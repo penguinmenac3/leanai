@@ -9,6 +9,11 @@
 By using this package you will not need to write your own main for most networks. This helps reduce boilerplate code.
 
 
+
+
+The main training loop.
+
+
 ---
 ### *def* **set**(name, function)
 
