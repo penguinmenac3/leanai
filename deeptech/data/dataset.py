@@ -61,7 +61,7 @@ class Dataset(Sequence):
         if filter_fun is None:
             self.sample_tokens = self.all_sample_tokens
         else:
-            self.sample_tokens = filter(filter_fun, self.all_sample_tokens)
+            self.sample_tokens = list(filter(filter_fun, self.all_sample_tokens))
 
     def init_caching(self, cache_dir):
         """
