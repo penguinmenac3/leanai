@@ -1,0 +1,7 @@
+{
+    "conv2d_bn": {"type": "sequential", "layers": [
+        {"type": "conv2d", "filters": "{param:filters}", "size": "{param:size}"},
+        {"type": "activation", "function": "relu"},
+        {"type": "batchnorm2d"}
+    ]}
+}

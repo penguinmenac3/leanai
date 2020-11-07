@@ -1,0 +1,49 @@
+/*
+"out" stores a copy of the output in the respective variable name.
+In case of tuple outputs, a list of names must be provided.
+When having multiple outputs only the first is passed on.
+Others can only be used via storing mechanic.
+
+"in" for layers with multiple inputs this list defines where the inputs come from.
+To use the previous layers output use -1.
+To use stored outputs use the string assigned to that output.
+
+By specifying "args" in a layer definition this layer can have multiple inputs.
+However, only the first input will be passed directly, the other inputs will be stored to be usable via the in mechanic.
+
+By using "return" you can specify that a layer does not return what it normaly would return,
+but it returns the content of the variables provided as a list. This can be used
+for models which have multiple outputs coming from various stages in the model.
+*/
+{
+    "includes": ["conv2d_bn.jsonc", "vgg16_bn.jsonc"],
+    "fasterrcnn_encoder": {"type": "sequential", "layers": [
+        {"type": "conv_block_2_bn", "filters": 64},
+        {"type": "conv_block_2_bn", "filters": 128},
+        {"type": "conv_block_3_bn", "filters": 256},
+        {"type": "conv_block_3_bn", "filters": 512},
+        {"type": "conv_block_3_bn", "filters": 512}
+    ]},
+    "classification": {/* TODO */},
+    "regression": {/* TODO */},
+    "fasterrcnn": {"type": "sequential", "args": ["image", "anchors"], "layers": [
+        {"type": "fasterrcnn_encoder", "out": "features"},
+
+        /* in features = -1, in rois = anchors */
+        {"type": "roipool", "in": [-1, "anchors"]},
+        {"type": "paralell", "reduction": "concat", "dimension": 1, "layers": [
+            {"type": "classification", "filters": "2", "activation": "softmax"},
+            /* in features = -1, in rois = anchors */
+            {"type": "regression", "filters": "4", "activation": "relu", "in": [-1, "anchors"]}
+        ], "out": "rois"},
+        /* Note: Only first output is used in sequential */
+        {"type": "topk", "k": 2000, "out": ["topk", "topk/indices"]},
+        
+        /* in features = features, in rois = -1 */
+        {"type": "roipool", "in": ["features", -1]},
+        {"type": "paralell", "reduction": "concat", "dimension": 1, "layers": [
+            {"type": "classification", "filters": "2", "activation": "softmax"},
+            {"type": "regression", "filters": "4", "activation": "relu", "in": [-1, "topk"]}
+        ], "out": "boxes"}
+    ], "return": ["anchors", "rois", "topk/indices", "boxes"]}
+}

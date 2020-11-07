@@ -2,3 +2,5 @@ numpy
 packaging
 imageio
 matplotlib
+jstyleson
+nose2

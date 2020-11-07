@@ -1,0 +1,25 @@
+{
+    "includes": ["conv2d_bn.jsonc"],
+    "conv_block_2_bn": {"type": "sequential", "layers": [
+        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
+        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
+        {"type": "maxpool2d", "size": [2, 2]}
+    ]},
+    "conv_block_3_bn": {"type": "sequential", "layers": [
+        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
+        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
+        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
+        {"type": "maxpool2d", "size": [2, 2]}
+    ]},
+    "vgg16_bn": {"type": "sequential", "layers": [
+        {"type": "conv_block_2_bn", "filters": 64},
+        {"type": "conv_block_2_bn", "filters": 128},
+        {"type": "conv_block_3_bn", "filters": 256},
+        {"type": "conv_block_3_bn", "filters": 512},
+        {"type": "conv_block_3_bn", "filters": 512},
+        {"type": "flatten"},
+        {"type": "fully_connected", "filters": "4096"},
+        {"type": "fully_connected", "filters": "4096"},
+        {"type": "fully_connected", "filters": "1000"}
+    ]}
+}
