@@ -1,25 +1,27 @@
 {
     "includes": ["conv2d_bn.jsonc"],
-    "conv_block_2_bn": {"type": "sequential", "layers": [
-        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
-        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
-        {"type": "maxpool2d", "size": [2, 2]}
+    "ConvBlock2_bn": {"type": "Sequential", "layers": [
+        {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
+        {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
+        {"type": "MaxPooling2D", "pool_size": [2, 2]}
     ]},
-    "conv_block_3_bn": {"type": "sequential", "layers": [
-        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
-        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
-        {"type": "conv2d_bn", "filters": "{param:filters}", "size": [3, 3], "activation": "relu"},
-        {"type": "maxpool2d", "size": [2, 2]}
+    "ConvBlock3_bn": {"type": "Sequential", "layers": [
+        {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
+        {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
+        {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
+        {"type": "MaxPooling2D", "pool_size": [2, 2]}
     ]},
-    "vgg16_bn": {"type": "sequential", "layers": [
-        {"type": "conv_block_2_bn", "filters": 64},
-        {"type": "conv_block_2_bn", "filters": 128},
-        {"type": "conv_block_3_bn", "filters": 256},
-        {"type": "conv_block_3_bn", "filters": 512},
-        {"type": "conv_block_3_bn", "filters": 512},
-        {"type": "flatten"},
-        {"type": "fully_connected", "filters": "4096"},
-        {"type": "fully_connected", "filters": "4096"},
-        {"type": "fully_connected", "filters": "1000"}
+    "VGG16_bn": {"type": "Sequential", "layers": [
+        {"type": "Sequential", "layers": []},
+        {"type": "ImageConversion", "standardize": true, "to_channel_first": true},
+        {"type": "ConvBlock2_bn", "filters": 64},
+        {"type": "ConvBlock2_bn", "filters": 128},
+        {"type": "ConvBlock3_bn", "filters": 256},
+        {"type": "ConvBlock3_bn", "filters": 512},
+        {"type": "ConvBlock3_bn", "filters": 512},
+        {"type": "Flatten"},
+        {"type": "FullyConnected", "out_features": 4096},
+        {"type": "FullyConnected", "out_features": 4096},
+        {"type": "Dense", "out_features": 1000}
     ]}
 }

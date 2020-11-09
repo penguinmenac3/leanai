@@ -10,8 +10,10 @@ from torch.nn.functional import max_pool2d as _MaxPooling2D
 from torch.nn.functional import avg_pool1d as _AveragePooling1D
 from torch.nn.functional import avg_pool2d as _AveragePooling2D
 from deeptech.model.layers.flatten import Flatten
+from deeptech.model.module_registry import add_module
 
 
+@add_module()
 class MaxPooling1D(Module):
     def __init__(self, pool_size=2, stride=None):
         """
@@ -33,6 +35,7 @@ class MaxPooling1D(Module):
         return _MaxPooling1D(features, self.pool_size, stride=self.stride)
 
 
+@add_module()
 class MaxPooling2D(Module):
     def __init__(self, pool_size=(2, 2), stride=None):
         """
@@ -54,6 +57,7 @@ class MaxPooling2D(Module):
         return _MaxPooling2D(features, self.pool_size, stride=self.stride)
 
 
+@add_module()
 class GlobalAveragePooling1D(Module):
     def __init__(self):
         """
@@ -68,6 +72,7 @@ class GlobalAveragePooling1D(Module):
         return self.flatten(_AveragePooling1D(features, features.size()[2:]))
 
 
+@add_module()
 class GlobalAveragePooling2D(Module):
     def __init__(self):
         """

@@ -5,8 +5,10 @@
 """
 import torch
 from torch.nn import Module
+from deeptech.model.module_registry import add_module
 
 
+@add_module()
 class Gather(Module):
     def __init__(self, axis):
         """
@@ -34,6 +36,7 @@ class Gather(Module):
         return torch.stack([torch.index_select(input_tensor[i], self.axis, indices[i]) for i in range(indices.shape[0])])
 
 
+@add_module()
 class TopKIndices(Module):
     def __init__(self, k):
         """

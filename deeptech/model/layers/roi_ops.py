@@ -7,6 +7,7 @@ import torch
 from torch.nn import Module
 from torchvision.ops import roi_pool as _roi_pool
 from torchvision.ops import roi_align as _roi_align
+from deeptech.model.module_registry import add_module
 
 
 def _convert_boxes_to_roi_format(boxes):
@@ -25,7 +26,7 @@ def _convert_boxes_to_roi_format(boxes):
     return rois
 
 
-# Cell: 3
+@add_module()
 class RoiPool(Module):
     def __init__(self, output_size, spatial_scale=1.0):
         """
@@ -56,6 +57,7 @@ class RoiPool(Module):
         return result
 
 
+@add_module()
 class RoiAlign(Module):
     def __init__(self, output_size, spatial_scale=1.0):
         """

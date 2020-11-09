@@ -5,8 +5,10 @@
 """
 from torch.nn import Module
 
+from deeptech.model.module_registry import add_module
 
-# Cell: 2
+
+@add_module()
 class Flatten(Module):
     def __init__(self):
         """

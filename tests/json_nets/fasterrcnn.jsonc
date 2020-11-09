@@ -5,7 +5,7 @@ When having multiple outputs only the first is passed on.
 Others can only be used via storing mechanic.
 
 "in" for layers with multiple inputs this list defines where the inputs come from.
-To use the previous layers output use -1.
+To use the previous layers output use null.
 To use stored outputs use the string assigned to that output.
 
 By specifying "args" in a layer definition this layer can have multiple inputs.
@@ -29,21 +29,21 @@ for models which have multiple outputs coming from various stages in the model.
     "fasterrcnn": {"type": "sequential", "args": ["image", "anchors"], "layers": [
         {"type": "fasterrcnn_encoder", "out": "features"},
 
-        /* in features = -1, in rois = anchors */
-        {"type": "roipool", "in": [-1, "anchors"]},
+        /* in features = null, in rois = anchors */
+        {"type": "roipool", "in": [null, "anchors"]},
         {"type": "paralell", "reduction": "concat", "dimension": 1, "layers": [
             {"type": "classification", "filters": "2", "activation": "softmax"},
-            /* in features = -1, in rois = anchors */
-            {"type": "regression", "filters": "4", "activation": "relu", "in": [-1, "anchors"]}
+            /* in features = null, in rois = anchors */
+            {"type": "regression", "filters": "4", "activation": "relu", "in": [null, "anchors"]}
         ], "out": "rois"},
         /* Note: Only first output is used in sequential */
         {"type": "topk", "k": 2000, "out": ["topk", "topk/indices"]},
         
-        /* in features = features, in rois = -1 */
-        {"type": "roipool", "in": ["features", -1]},
+        /* in features = features, in rois = null */
+        {"type": "roipool", "in": ["features", null]},
         {"type": "paralell", "reduction": "concat", "dimension": 1, "layers": [
             {"type": "classification", "filters": "2", "activation": "softmax"},
-            {"type": "regression", "filters": "4", "activation": "relu", "in": [-1, "topk"]}
+            {"type": "regression", "filters": "4", "activation": "relu", "in": [null, "topk"]}
         ], "out": "boxes"}
     ], "return": ["anchors", "rois", "topk/indices", "boxes"]}
 }

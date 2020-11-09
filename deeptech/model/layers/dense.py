@@ -6,8 +6,10 @@
 import torch
 from torch.nn import Module
 from deeptech.core.annotations import RunOnlyOnce
+from deeptech.model.module_registry import add_module
 
-
+@add_module("FullyConnected")
+@add_module()
 class Dense(Module):
     def __init__(self, out_features: int, activation=None):
         """
