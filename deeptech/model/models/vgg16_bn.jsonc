@@ -1,5 +1,9 @@
 {
-    "includes": ["conv2d_bn.jsonc"],
+    "Conv2D_bn": {"type": "Sequential", "layers": [
+        {"type": "Conv2D", "filters": "spec:filters", "kernel_size": "spec:size"},
+        {"type": "Activation", "activation": "relu"},
+        {"type": "BatchNormalization"}
+    ]},
     "ConvBlock2_bn": {"type": "Sequential", "layers": [
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},

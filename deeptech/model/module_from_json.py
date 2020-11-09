@@ -1,6 +1,7 @@
 from typing import Sequence
 import torch.nn as nn
 from deeptech.model import module_registry
+from deeptech.model.module_registry import add_lib_from_json
 from deeptech.model.layers import *
 
 
@@ -51,12 +52,19 @@ class Module(nn.Module):
         self._outputs = []
         self._type = type
         self._spec = spec
-        for layer in layers:
+        for idx, layer in enumerate(layers):
+            layer = layer.copy()
             for key, val in layer.items():
                 if isinstance(val, str) and val.startswith("spec:"):
                     layer[key] = self._spec[val.replace("spec:", "")]
+            if "disabled" in layer:
+                if layer["disabled"]:
+                    continue
+                else:
+                    del layer["disabled"]
             module = Module.create(variables=variables, **layer)
             self.submodules.append(module)
+            self.add_module("{}".format(idx+1), module)
         self._local_variables = variables
 
     def forward(self, *args):

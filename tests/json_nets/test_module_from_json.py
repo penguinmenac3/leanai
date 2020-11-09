@@ -9,7 +9,7 @@ from deeptech.model.module_registry import add_module, add_lib_from_json, _json_
 class TestModuleFromJSON(unittest.TestCase):
     def setUp(self) -> None:
         add_lib_from_json("tests/json_nets/vgg16_bn.jsonc")
-        self.module = Module.create("VGG16_bn")
+        self.module = Module.create("VGG16_bn", logits=True)
         self.input_data = torch.from_numpy(np.zeros((1, 128, 128, 3), dtype=np.float32))
         self.result = self.module(self.input_data)
 
@@ -22,7 +22,7 @@ class TestModuleFromJSON(unittest.TestCase):
     def test_module_created_with_submodules(self):
         self.assertIsNotNone(self.module)
         self.assertIsInstance(self.module.submodules, list)
-        self.assertEquals(11, len(self.module.submodules))
+        self.assertEquals(13, len(self.module.submodules))
 
     def test_scoped_variables_inline_submodule(self):
         self.assertIsInstance(self.module._local_variables, dict)
@@ -33,6 +33,7 @@ class TestModuleFromJSON(unittest.TestCase):
 
     def test_output(self):
         self.assertIsInstance(self.result, torch.Tensor)
+        self.assertEquals(self.result.shape, (1, 1000))
         self.assertTrue((self.module._local_variables[None] == self.result).all())
 
     def test_native_module_library(self):

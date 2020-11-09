@@ -11,7 +11,7 @@ from deeptech.training.trainers import SupervisedTrainer
 from deeptech.training.losses import SparseCrossEntropyLossFromLogits
 from deeptech.training.optimizers import smart_optimizer
 from deeptech.core import Config, cli
-from torch.nn import Module
+import torch.nn as nn
 from torch.optim import SGD
 
 
@@ -33,7 +33,7 @@ class FashionMNISTConfig(Config):
 
 
 # Should be in a model.py
-class ImageClassifierSimple(Module):
+class ImageClassifierSimple(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config

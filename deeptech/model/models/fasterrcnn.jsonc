@@ -16,7 +16,7 @@ but it returns the content of the variables provided as a list. This can be used
 for models which have multiple outputs coming from various stages in the model.
 */
 {
-    "includes": ["conv2d_bn.jsonc", "vgg16_bn.jsonc"],
+    "includes": ["vgg16_bn.jsonc"],
     "fasterrcnn_encoder": {"type": "sequential", "layers": [
         {"type": "conv_block_2_bn", "filters": 64},
         {"type": "conv_block_2_bn", "filters": 128},
