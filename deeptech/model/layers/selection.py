@@ -58,21 +58,23 @@ class TopKIndices(Module):
 
 @add_module()
 class GatherTopKIndices(Module):
-    def __init__(self, k):
+    def __init__(self, k, foreground_class_idx=1):
         """
         Returns the top k tensor indices (separate per batch).
     
         Created object is callable with the following parameters:
-        * **input_tensor**: (Tensor[N, L, ?]) The tensor from which to gather the values.
-        * **scores**: (Tensor[N, L]) The tensor in which to search the top k indices.
-        * **returns**: (Tensor[N, K, ?]) The tensor containing the values at the top k indices.
+        * **input_tensor**: (Tensor[N, C, L]) The tensor from which to gather the values.
+        * **scores**: (Tensor[N, cls, K]) The tensor in which to search the top k indices.
+        * **returns**: (Tensor[N, C, K]) The tensor containing the values at the top k indices.
         
         Parameters for the constructor:
         :param k: The number of indices to return per batch.
+        :param foreground_class_idx: The index used to determine the foreground class in the score tensor. (Default: 1)
         """
         super().__init__()
-        self.gather = Gather(axis=1)
+        self.gather = Gather(axis=2)
         self.topk = TopKIndices(k)
+        self.foreground_class_idx = foreground_class_idx
 
     def forward(self, input_tensor, scores):
-        return self.gather(input_tensor, self.topk(scores))
+        return self.gather(input_tensor, self.topk(scores[:, self.foreground_class_idx]))
