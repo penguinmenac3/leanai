@@ -25,7 +25,7 @@ class DetectionHead(Module):
 
     @RunOnlyOnce
     def build(self, features, anchors):
-        dim = features.shape[1]
+        dim = anchors.shape[1] // 2
         num_anchors = anchors.shape[2]
         self.deltas = Conv1D(filters=num_anchors*dim*2, kernel_size=1)
         if self.num_classes > 0:
@@ -56,13 +56,13 @@ class DetectionHead(Module):
         assert len(features.shape) == 3
         self.build(features, anchors)
 
-        dim = features.shape[1]
+        dim = anchors.shape[1] // 2
         num_anchors = anchors.shape[2]
 
         class_ids = None
         if self.num_classes > 0:
             class_ids = self.classification(features)
-            class_ids = class_ids.reshape((class_ids.shape[0], dim*2, -1))
+            class_ids = class_ids.reshape((class_ids.shape[0], self.num_classes, -1))
 
         deltas = self.deltas(features)
         deltas = deltas.reshape((deltas.shape[0], dim*2, num_anchors, -1))
@@ -76,7 +76,7 @@ class DetectionHead(Module):
 
 @add_module()
 class GridAnchorGenerator(Module):
-    def __init__(self, ratios, scales, feature_map_scale, base_size=256):
+    def __init__(self, ratios, scales, feature_map_scale, height=-1, width=-1, base_size=256):
         """
         Construct an anchor grid.
 
@@ -86,13 +86,16 @@ class GridAnchorGenerator(Module):
         :param ratios: A list of aspect ratios used for the anchors.
         :param scales: A list of scales used for the anchors.
         :param feature_map_scale: Divide any meassure in the input space by this number to get the size in the feature map (typically 8, 16 or 32).
+        :param height: The height of the anchor grid (in grid cells). When negative will use feature map to figure out size. (Default: -1)
+        :param width: The width of the anchor grid (in grid cells). When negative will use feature map to figure out size. (Default: -1)
         :param base_size: The base size of the boxes (defaults to 256).
         """
         super().__init__()
         self.ratios = ratios
         self.scales = scales
         self.feature_map_scale = feature_map_scale
-        self.base_sizes = base_size
+        self.height, self.width = height, width
+        self.base_size = base_size
 
     @RunOnlyOnce
     def build(self, features):
@@ -106,14 +109,18 @@ class GridAnchorGenerator(Module):
                 anchor_shapes.append(size)
 
         _,_,h_feat, w_feat = features.shape
+        if self.height < 0:
+            self.height = h_feat
+        if self.width < 0:
+            self.width = w_feat
 
         num_anchors = len(anchor_shapes)
-        anchors = np.zeros((1, 4, num_anchors, h_feat, w_feat), dtype=np.float32)
+        anchors = np.zeros((1, 4, num_anchors, self.height, self.width), dtype=np.float32)
         for anchor_idx in range(num_anchors):
-            for y in range(h_feat):
-                for x in range(w_feat):
-                    anchors[0, 0, anchor_idx, y, x] = x + 0.5 * self.feature_map_scale
-                    anchors[0, 1, anchor_idx, y, x] = y + 0.5 * self.feature_map_scale
+            for y in range(self.height):
+                for x in range(self.width):
+                    anchors[0, 0, anchor_idx, y, x] = (x + 0.5) * self.feature_map_scale
+                    anchors[0, 1, anchor_idx, y, x] = (y + 0.5) * self.feature_map_scale
                     anchors[0, 2:, anchor_idx, y, x] = anchor_shapes[anchor_idx]
 
         self.anchors = torch.from_numpy(anchors).to(features.device)
@@ -126,4 +133,5 @@ class GridAnchorGenerator(Module):
         :returns: A tensor representing the anchor grid of shape (1, 4, num_anchor_shapes, h_feat, w_feat).
         """
         self.build(features)
-        return self.anchors
+        _,_,h_feat, w_feat = features.shape
+        return self.anchors[:, :, :, :h_feat, :w_feat].detach()
