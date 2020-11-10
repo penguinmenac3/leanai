@@ -17,33 +17,21 @@ for models which have multiple outputs coming from various stages in the model.
 */
 {
     "includes": ["vgg16_bn.jsonc"],
-    "fasterrcnn_encoder": {"type": "sequential", "layers": [
-        {"type": "conv_block_2_bn", "filters": 64},
-        {"type": "conv_block_2_bn", "filters": 128},
-        {"type": "conv_block_3_bn", "filters": 256},
-        {"type": "conv_block_3_bn", "filters": 512},
-        {"type": "conv_block_3_bn", "filters": 512}
-    ]},
-    "classification": {/* TODO */},
-    "regression": {/* TODO */},
-    "fasterrcnn": {"type": "sequential", "args": ["image", "anchors"], "layers": [
-        {"type": "fasterrcnn_encoder", "out": "features"},
-
-        /* in features = null, in rois = anchors */
-        {"type": "roipool", "in": [null, "anchors"]},
-        {"type": "paralell", "reduction": "concat", "dimension": 1, "layers": [
-            {"type": "classification", "filters": "2", "activation": "softmax"},
-            /* in features = null, in rois = anchors */
-            {"type": "regression", "filters": "4", "activation": "relu", "in": [null, "anchors"]}
-        ], "out": "rois"},
-        /* Note: Only first output is used in sequential */
-        {"type": "topk", "k": 2000, "out": ["topk", "topk/indices"]},
-        
-        /* in features = features, in rois = null */
-        {"type": "roipool", "in": ["features", null]},
-        {"type": "paralell", "reduction": "concat", "dimension": 1, "layers": [
-            {"type": "classification", "filters": "2", "activation": "softmax"},
-            {"type": "regression", "filters": "4", "activation": "relu", "in": [null, "topk"]}
-        ], "out": "boxes"}
-    ], "return": ["anchors", "rois", "topk/indices", "boxes"]}
+    /* Faster RCNN */
+    "FasterRCNN": {"type": "Sequential", "args": ["image"], "layers": [
+        {"type": "FasterRCNNEncoder", "out": "features"},
+        {"type": "GridAnchorGenerator", "ratios": [0.5, 1, 2], "scales": [0.5, 1, 2], "feature_map_scale": 8, "out": "rpn/anchors"},
+        {"type": "DetectionHead", "num_classes": 2, "in": ["features", "rpn/anchors"], "out": ["rpn/boxes", "rpn/class_ids"]},
+        {"type": "GatherTopKIndices", "k": 2000, "in": ["rpn/boxes", "rpn/class_ids"], "out": "final/anchors"},
+        {"type": "BoxToRoi", "feature_map_scale": 8},
+        {"type": "RoiPool", "output_size": [7, 7], "in": ["features", null]},
+        {"type": "DetectionHead", "num_classes": "spec:num_classes", "in": [null, "final/anchors"], "out": ["final/boxes", "final/class_ids"]},
+    ], "return": ["rpn/anchors", "rpn/boxes", "rpn/class_ids", "final/anchors", "final/boxes", "final/class_ids"]},
+    /* Encoder */
+    "FasterRCNNEncoder": {"type": "sequential", "layers": [
+        {"type": "ConvBlock2_bn", "filters": 64, "pool": true},
+        {"type": "ConvBlock2_bn", "filters": 128, "pool": true},
+        {"type": "ConvBlock3_bn", "filters": 256, "pool": true},
+        {"type": "ConvBlock3_bn", "filters": 512, "pool": false}
+    ]}
 }
