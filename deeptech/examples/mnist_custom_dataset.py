@@ -7,7 +7,7 @@ First we import everything, then we write the config, then we implement the cust
 """
 import numpy as np
 from collections import namedtuple
-from deeptech.model.module_from_json import Module, add_lib_from_json
+from deeptech.model.module_from_json import Module
 from torchvision.datasets import FashionMNIST
 from deeptech.data.dataset import Dataset
 from deeptech.core.definitions import SPLIT_TRAIN
@@ -25,8 +25,7 @@ class FashionMNISTConfig(Config):
         self.data_dataset = FashionMNISTDataset
 
         # Config of the model
-        add_lib_from_json("deeptech/examples/mnist_model.json")
-        self.model_model = lambda config: Module.create("MNISTModel", num_classes=10)
+        self.model_model = lambda config: Module.create_from_file("deeptech/examples/mnist_model.json", "MNISTModel", num_classes=10, logits=True)
 
         # Config for training
         self.training_loss = SparseCrossEntropyLossFromLogits

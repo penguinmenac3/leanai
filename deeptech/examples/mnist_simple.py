@@ -7,7 +7,7 @@ We need barely any code.
 First we import everything, then we write the config, and finaly we tell deeptech to run this.
 """
 from deeptech.data.datasets import FashionMNISTDataset
-from deeptech.model.module_from_json import Module, add_lib_from_json
+from deeptech.model.module_from_json import Module
 from deeptech.training.trainers import SupervisedTrainer
 from deeptech.training.losses import SparseCrossEntropyLossFromLogits
 from deeptech.training.optimizers import smart_optimizer
@@ -22,8 +22,7 @@ class FashionMNISTConfig(Config):
         self.data_dataset = FashionMNISTDataset
 
         # Config of the model
-        add_lib_from_json("deeptech/examples/mnist_model.json")
-        self.model_model = lambda config: Module.create("MNISTModel", num_classes=10, logits=True)
+        self.model_model = lambda config: Module.create_from_file("deeptech/examples/mnist_model.json", "MNISTModel", num_classes=10, logits=True)
 
         # Config for training
         self.training_loss = SparseCrossEntropyLossFromLogits

@@ -7,28 +7,28 @@
     "ConvBlock2_bn": {"type": "Sequential", "layers": [
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
-        {"type": "MaxPooling2D", "pool_size": [2, 2]}
+        {"type": "MaxPooling2D", "pool_size": [2, 2], "disabled": "spec:pool"}
     ]},
     "ConvBlock3_bn": {"type": "Sequential", "layers": [
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
-        {"type": "MaxPooling2D", "pool_size": [2, 2]}
+        {"type": "MaxPooling2D", "pool_size": [2, 2], "disabled": "spec:pool"}
     ]},
     "VGG16_bn": {"type": "Sequential", "layers": [
         {"type": "Sequential", "layers": []},
         {"type": "ImageConversion", "standardize": true, "to_channel_first": true},
-        {"type": "ConvBlock2_bn", "filters": 64},
-        {"type": "ConvBlock2_bn", "filters": 128},
-        {"type": "ConvBlock3_bn", "filters": 256},
-        {"type": "ConvBlock3_bn", "filters": 512},
-        {"type": "ConvBlock3_bn", "filters": 512},
+        {"type": "ConvBlock2_bn", "filters": 64, "pool": true},
+        {"type": "ConvBlock2_bn", "filters": 128, "pool": true},
+        {"type": "ConvBlock3_bn", "filters": 256, "pool": true},
+        {"type": "ConvBlock3_bn", "filters": 512, "pool": true},
+        {"type": "ConvBlock3_bn", "filters": 512, "pool": true},
         {"type": "Flatten"},
         {"type": "FullyConnected", "out_features": 4096},
         {"type": "Activation", "activation": "relu"},
         {"type": "FullyConnected", "out_features": 4096},
         {"type": "Activation", "activation": "relu"},
         {"type": "Dense", "out_features": 1000},
-        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "{spec:logits}"}
+        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "spec:logits"}
     ]}
 }
