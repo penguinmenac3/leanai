@@ -134,4 +134,4 @@ class GridAnchorGenerator(Module):
         """
         self.build(features)
         _,_,h_feat, w_feat = features.shape
-        return self.anchors[:, :, :, :h_feat, :w_feat].detach()
+        return self.anchors[:, :, :, :h_feat, :w_feat].detach().contiguous()

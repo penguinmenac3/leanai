@@ -20,8 +20,9 @@ for models which have multiple outputs coming from various stages in the model.
     /* Faster RCNN */
     "FasterRCNN": {"type": "Sequential", "args": ["image"], "layers": [
         {"type": "FasterRCNNEncoder", "out": "features"},
-        {"type": "GridAnchorGenerator", "ratios": [0.5, 1, 2], "scales": [0.5, 1, 2], "feature_map_scale": 8, "height": 100, "width": 100, "out": "rpn_anchors"},
-        {"type": "DetectionHead", "num_classes": 2, "in": ["features", "rpn_anchors"], "out": ["rpn_boxes", "rpn_class_ids"]},
+        {"type": "GridAnchorGenerator", "ratios": [0.5, 1, 2], "scales": [0.5, 1, 2], "feature_map_scale": 8, "height": 100, "width": 100, "out": "anchors"},
+        {"type": "Flatten", "dims": 3, "out": "rpn_anchors"},
+        {"type": "DetectionHead", "num_classes": 2, "in": ["features", "anchors"], "out": ["rpn_boxes", "rpn_class_ids"]},
         {"type": "GatherTopKIndices", "k": 2000, "in": ["rpn_boxes", "rpn_class_ids"], "out": "final_anchors"},
         {"type": "BoxToRoi", "feature_map_scale": 8},
         {"type": "RoiPool", "output_size": [7, 7], "in": ["features", null]},
