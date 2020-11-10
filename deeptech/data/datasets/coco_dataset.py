@@ -13,13 +13,12 @@ from deeptech.data.dataset import Dataset
 from deeptech.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 
 
-InputType = namedtuple("Input", ["image"])
-OutputType = namedtuple("Output", ["class_ids", "boxes", "polygons"])
-
-
 class COCODataset(Dataset):
-    def __init__(self, config, split) -> None:
-        super().__init__(config, InputType, OutputType)
+    InputType = namedtuple("Input", ["image"])
+    OutputType = namedtuple("Output", ["class_ids", "boxes", "polygons"])
+
+    def __init__(self, config, split, DatasetInput=InputType, DatasetOutput=OutputType) -> None:
+        super().__init__(config, DatasetInput, DatasetOutput)
         version = config.data_version  # 2014, 2017
         self.image_folder = os.path.join(config.data_path, "images", f"{split}{version}")
         all_sample_tokens = os.listdir(self.image_folder)
