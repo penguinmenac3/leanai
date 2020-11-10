@@ -54,3 +54,25 @@ class TopKIndices(Module):
 
     def forward(self, input_tensor):
         return torch.topk(input_tensor, self.k).indices
+
+
+@add_module()
+class GatherTopKIndices(Module):
+    def __init__(self, k):
+        """
+        Returns the top k tensor indices (separate per batch).
+    
+        Created object is callable with the following parameters:
+        * **input_tensor**: (Tensor[N, L, ?]) The tensor from which to gather the values.
+        * **scores**: (Tensor[N, L]) The tensor in which to search the top k indices.
+        * **returns**: (Tensor[N, K, ?]) The tensor containing the values at the top k indices.
+        
+        Parameters for the constructor:
+        :param k: The number of indices to return per batch.
+        """
+        super().__init__()
+        self.gather = Gather(axis=1)
+        self.topk = TopKIndices(k)
+
+    def forward(self, input_tensor, scores):
+        return self.gather(input_tensor, self.topk(scores))
