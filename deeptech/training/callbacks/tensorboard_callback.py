@@ -41,8 +41,8 @@ class TensorboardCallback(BaseCallback):
         self.dev_summary_txt = os.path.join(get_log_path(), "val", "log.txt")
 
         try:
-            self.train_summary_writer.add_graph(model, *next(iter(train_dataloader)))
-            self.dev_summary_writer.add_graph(model, *next(iter(dev_dataloader)))
+            self.train_summary_writer.add_graph(model, input_to_model=next(iter(train_dataloader))[0])
+            self.dev_summary_writer.add_graph(model, input_to_model=next(iter(dev_dataloader))[0])
         except:
             warn("Cannot log model. Does it use **kwargs instead of *args somewhere?")
         return start_epoch
