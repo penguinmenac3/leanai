@@ -1,4 +1,5 @@
 from collections import namedtuple
+from deeptech.core.logging import warn
 from typing import Sequence
 import torch.nn as nn
 from deeptech.model import module_registry
@@ -43,7 +44,11 @@ class Module(nn.Module):
                 raise RuntimeError("There is no layer for '{}' in the library!".format(typename))
 
         module._module_inputs = spec["in"] if "in" in spec else [None]
+        if isinstance(module._module_inputs, str):
+            module._module_inputs = [module._module_inputs]
         module._module_outputs = spec["out"] if "out" in spec else []  # First output is always stored to -1 so no need to specify here
+        if isinstance(module._module_outputs, str):
+            module._module_outputs = [module._module_outputs]
         return module
 
     @staticmethod
@@ -74,6 +79,7 @@ class Module(nn.Module):
                 if isinstance(val, str) and val.startswith("spec:"):
                     layer[key] = self._spec[val.replace("spec:", "")]
             if "disabled" in layer and layer["disabled"]:
+                warn("Disabled Layer: {}".format(layer))
                 continue
             layer_type = layer["type"]
             del layer["type"]
@@ -94,7 +100,10 @@ class Module(nn.Module):
             raise NotImplementedError("Module for paralell not implemented yet.")
         else:
             raise RuntimeError("There is no module of type other than 'Paralell' and 'Sequential' you provided: '{}'".format(self.type))
-        return self._collect_variables(self._returns, no_tuple_for_single_output=True)
+        returns = self._collect_variables(self._returns, no_tuple_for_single_output=True)
+        if self._return_type is not None:
+            returns = self._return_type(*returns)
+        return returns
 
     def _collect_variables(self, names, no_tuple_for_single_output=False):
         collected = []
@@ -103,8 +112,6 @@ class Module(nn.Module):
         # Unpack single returns to be no tuple
         if no_tuple_for_single_output and len(collected) == 1:
             collected = collected[0]
-        if self._return_type is not None:
-            collected = self._return_type(*collected)
         return collected
 
     def _store_variables(self, names, values):

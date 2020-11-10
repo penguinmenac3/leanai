@@ -7,22 +7,22 @@
     "ConvBlock2_bn": {"type": "Sequential", "layers": [
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
-        {"type": "MaxPooling2D", "pool_size": [2, 2], "disabled": "spec:pool"}
+        {"type": "MaxPooling2D", "pool_size": [2, 2], "disabled": "spec:no_pool"}
     ]},
     "ConvBlock3_bn": {"type": "Sequential", "layers": [
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
         {"type": "Conv2D_bn", "filters": "spec:filters", "size": [3, 3], "activation": "relu"},
-        {"type": "MaxPooling2D", "pool_size": [2, 2], "disabled": "spec:pool"}
+        {"type": "MaxPooling2D", "pool_size": [2, 2], "disabled": "spec:no_pool"}
     ]},
     "VGG16_bn": {"type": "Sequential", "layers": [
         {"type": "Sequential", "layers": []},
         {"type": "ImageConversion", "standardize": true, "to_channel_first": true},
-        {"type": "ConvBlock2_bn", "filters": 64, "pool": true},
-        {"type": "ConvBlock2_bn", "filters": 128, "pool": true},
-        {"type": "ConvBlock3_bn", "filters": 256, "pool": true},
-        {"type": "ConvBlock3_bn", "filters": 512, "pool": true},
-        {"type": "ConvBlock3_bn", "filters": 512, "pool": true},
+        {"type": "ConvBlock2_bn", "filters": 64, "no_pool": false},
+        {"type": "ConvBlock2_bn", "filters": 128, "no_pool": false},
+        {"type": "ConvBlock3_bn", "filters": 256, "no_pool": false},
+        {"type": "ConvBlock3_bn", "filters": 512, "no_pool": false},
+        {"type": "ConvBlock3_bn", "filters": 512, "no_pool": false},
         {"type": "Flatten"},
         {"type": "FullyConnected", "out_features": 4096},
         {"type": "Activation", "activation": "relu"},
