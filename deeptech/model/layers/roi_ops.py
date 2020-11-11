@@ -28,7 +28,7 @@ def _convert_boxes_to_roi_format(boxes):
 
 @add_module()
 class BoxToRoi(Module):
-    def __init__(self, feature_map_scale) -> None:
+    def __init__(self, feature_map_scale=1) -> None:
         super().__init__()
         self.feature_map_scale = feature_map_scale
     
