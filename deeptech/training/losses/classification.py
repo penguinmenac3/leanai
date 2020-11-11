@@ -33,7 +33,9 @@ class SparseCrossEntropyLossFromLogits(Module):
         if not isinstance(y_pred, Tensor):
             y_pred = y_pred.class_id
         y_true = y_true.long()
-        return self.loss_fun(y_pred, y_true[:, 0])
+        if len(y_true.shape) > 2 and y_true.shape[1] == 1:
+            y_true = y_true[:, 0]
+        return self.loss_fun(y_pred, y_true)
 
 
 class BinaryCrossEntropyLossFromLogits(Module):
