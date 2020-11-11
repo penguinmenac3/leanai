@@ -63,7 +63,14 @@ class COCODataset(Dataset):
         class_ids = []
         for anno in annos:
             class_ids.append(anno["category_id"])
-        return np.array(class_ids)
+        return np.array(class_ids, dtype=np.int32) # FIXME what is the right type?
+
+    def get_fg_bg_classes(self, sample_token):
+        annos = self.annotations[sample_token]
+        class_ids = []
+        for _ in annos:
+            class_ids.append(1)
+        return np.array(class_ids, dtype=np.int32) # FIXME what is the right type?
 
     def get_boxes(self, sample_token):
         annos = self.annotations[sample_token]
@@ -72,7 +79,7 @@ class COCODataset(Dataset):
             center = [c + s//2 for c, s in zip(anno["bbox"][:2], anno["bbox"][2:])]
             size = anno["bbox"][2:]
             boxes.append(center + size)
-        return np.array(boxes)
+        return np.array(boxes, dtype=np.float32)
 
     def get_polygons(self, sample_token):
         annos = self.annotations[sample_token]
