@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '20201110'
+__version__ = '20210111'
 
 here = path.abspath(path.dirname(__file__))
 
@@ -41,6 +41,12 @@ setup(
     entry_points={
         'console_scripts': [
             'deeptech = deeptech.core.cli:run',
+            'deeptech_tools = deeptech.core.cli_tools:main',
         ]
-    }
+    },
+    extras_require={
+        'visualization': ['open3d==0.9.0.0', 'tensorboard'],
+        'dev': ['nose2', 'packaging'],
+        'all': ['open3d==0.9.0.0', 'tensorboard', 'nose2', 'packaging'],
+    },
 )

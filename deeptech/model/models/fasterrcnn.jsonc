@@ -1,0 +1,42 @@
+/*
+"out" stores a copy of the output in the respective variable name.
+In case of tuple outputs, a list of names must be provided.
+When having multiple outputs only the first is passed on.
+Others can only be used via storing mechanic.
+
+"in" for layers with multiple inputs this list defines where the inputs come from.
+To use the previous layers output use null.
+To use stored outputs use the string assigned to that output.
+
+By specifying "args" in a layer definition this layer can have multiple inputs.
+However, only the first input will be passed directly, the other inputs will be stored to be usable via the in mechanic.
+
+By using "return" you can specify that a layer does not return what it normaly would return,
+but it returns the content of the variables provided as a list. This can be used
+for models which have multiple outputs coming from various stages in the model.
+*/
+{
+    "includes": ["vgg16_bn.jsonc"],
+    /* Faster RCNN */
+    "FasterRCNN": {"type": "Sequential", "args": ["image"], "layers": [
+        {"type": "FasterRCNNEncoder", "out": "features", "name": "encoder"},
+        {"type": "GridAnchorGenerator", "ratios": [0.5, 1, 2], "scales": [0.5, 1, 2], "feature_map_scale": 16, "height": 100, "width": 100, "out": "anchors"},
+        {"type": "Flatten", "dims": 3, "out": "rpn_anchors", "name": "rpn_anchors"},
+        {"type": "DetectionHead", "num_classes": 2, "in": ["features", "anchors"], "out": ["rpn_deltas", "rpn_class_ids"]},
+        {"type": "DeltasToBoxes", "log_deltas": "spec:log_deltas", "in": ["rpn_deltas", "rpn_anchors"], "out": "rpn_boxes"},
+        {"type": "GatherTopKIndices", "k": 2000, "in": ["rpn_boxes", "rpn_class_ids"], "out": "final_anchors"},
+        {"type": "BoxToRoi", "feature_map_scale": 16},
+        {"type": "RoiAlign", "output_size": [7, 7], "in": ["features", null]},
+        {"type": "DetectionHead", "num_classes": "spec:num_classes", "in": [null, "final_anchors"], "out": ["final_deltas", "final_class_ids"]},
+        {"type": "DeltasToBoxes", "log_deltas": "spec:log_deltas", "in": ["final_deltas", "final_anchors"], "out": "final_boxes"},
+    ], "return": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "final_anchors", "final_deltas", "final_boxes", "final_class_ids"]},
+    /* Encoder */
+    "FasterRCNNEncoder": {"type": "Sequential", "layers": [
+        {"type": "ImageConversion", "standardize": true, "to_channel_first": true},
+        {"type": "ConvBlock2_bn", "filters": 64, "no_pool": false},
+        {"type": "ConvBlock2_bn", "filters": 128, "no_pool": false},
+        {"type": "ConvBlock3_bn", "filters": 256, "no_pool": false},
+        {"type": "ConvBlock3_bn", "filters": 512, "no_pool": false},
+        {"type": "ConvBlock3_bn", "filters": 512, "no_pool": true}
+    ]}
+}

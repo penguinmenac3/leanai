@@ -10,8 +10,10 @@ from torch.nn import Sequential
 
 from deeptech.core.annotations import RunOnlyOnce
 from deeptech.model.layers import ImageConversion
+from deeptech.model.module_registry import add_module
 
 
+@add_module("ImageNetModel")
 class ImagenetModel(Module):
     def __init__(self, encoder_type, only_encoder=False, pretrained=True, last_layer=None, standardize=True, to_channel_first=True):
         """

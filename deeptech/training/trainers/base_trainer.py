@@ -9,11 +9,10 @@ from deeptech.core.checkpoint import load_state
 
 
 class BaseTrainer(object):
-    def __init__(self, config, model, loss, optim, callbacks, train_data, val_data):
+    def __init__(self, model, loss, optim, callbacks, train_data, val_data):
         """
         A trainer is a general interface for training models.
         """
-        self.config = config
         self.model = model
         self.loss = loss
         self.optimizer = optim

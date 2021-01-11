@@ -24,7 +24,10 @@ import time as __time
 import datetime as __datetime
 
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 import imageio
 
 
@@ -375,6 +378,26 @@ def warn(msg: str, end: str = "\n") -> None:
     if PRINT_WARN:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] WARN {}".format(time_stamp, msg)
+        print("\r{}".format(data), end=end)
+        if __logfile is not None:
+            with open(__logfile, "a") as f:
+                f.write(data + "\n")
+        else:
+            __log_buffer.append(data)
+
+
+def debug(msg: str, end: str = "\n") -> None:
+    """
+    Print something with a timestamp.
+    Useful for logging.
+    Deeptech internally uses this for all its log messages.
+
+    :param msg: The message to print.
+    :param end: The line ending. Defaults to "\n" but can be set to "" to not have a linebreak.
+    """
+    if DEBUG_VERBOSITY:
+        time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        data = "[{}] DEBUG {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
         if __logfile is not None:
             with open(__logfile, "a") as f:

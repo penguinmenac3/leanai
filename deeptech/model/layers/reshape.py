@@ -4,8 +4,10 @@
 > Reshape a tensor.
 """
 from torch.nn import Module
+from deeptech.model.module_registry import add_module
 
 
+@add_module()
 class Reshape(Module):
     def __init__(self, output_shape):
         """

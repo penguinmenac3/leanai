@@ -1,33 +1,29 @@
 """doc
 # deeptech.training.losses.masking
 
-> Masking losses can be made easy by putting nans in the ground truth.
+> Masking losses can be made easy by putting nans or negative values in the ground truth.
 """
 import torch
 from torch.nn import Module
 
 
-class NaNMaskedLoss(Module):
-    def __init__(self, loss, masked_dim=-1):
+class MaskedLoss(Module):
+    def __init__(self, loss, masking_fun, masked_dim=-1):
         """
-        Compute a sparse cross entropy.
-        
-        This means that the preds are logits and the targets are not one hot encoded.
-        
-        :param loss: The loss that should be wrapped and only applied on non nan values.
         """
         super().__init__()
         self.wrapped_loss = loss
         self.masked_dim = masked_dim
+        self.masking_fun = masking_fun
 
     def forward(self, y_pred, y_true):
         """
-        Compute the loss given in the constructor only on values where the GT is not NaN.
+        Compute the loss given in the constructor only on values where the GT masking fun returns true.
         
         :param y_pred: The predictions of the network. Either a NamedTuple pointing at ITensors or a Dict or Tuple of ITensors.
         :param y_true: The desired outputs of the network (labels). Either a NamedTuple pointing at ITensors or a Dict or Tuple of ITensors.
         """
-        binary_mask = (~y_true.isnan())
+        binary_mask = self.masking_fun(y_true)
         mask = binary_mask.float()
         masked_y_true = (y_true * mask)[binary_mask]
         shape = list(y_true.shape)
@@ -42,10 +38,24 @@ class NaNMaskedLoss(Module):
         shape = list(y_pred.shape)
         shape[self.masked_dim] = -1
         masked_y_pred = masked_y_pred.reshape(shape)
-        
+
         if masked_y_pred.shape[self.masked_dim] > 0:
             loss = self.wrapped_loss(masked_y_pred, masked_y_true)
         else:
             loss = 0
 
         return loss
+
+
+class NegMaskedLoss(MaskedLoss):
+    def __init__(self, loss, masked_dim=-1):
+        """
+        """
+        super().__init__(loss=loss, masking_fun=lambda x: (x >= 0), masked_dim=masked_dim)
+
+
+class NaNMaskedLoss(MaskedLoss):
+    def __init__(self, loss, masked_dim=-1):
+        """
+        """
+        super().__init__(loss=loss, masking_fun=lambda x: (~x.isnan()), masked_dim=masked_dim)

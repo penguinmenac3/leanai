@@ -3,17 +3,16 @@
 
 > A base class for implementing datasets with ease.
 """
+from deeptech.core.config import inject_kwargs
 from typing import Any, Sequence, Tuple, NamedTuple
 import traceback
 import os
 import sys
 import pickle
 from deeptech.core.logging import info, status
-from deeptech.core.config import Config
-
 
 class Dataset(Sequence):
-    def __init__(self, config: Config, dataset_input_type=NamedTuple, dataset_output_type=NamedTuple, cache_dir: str = None):
+    def __init__(self, dataset_input_type=NamedTuple, dataset_output_type=NamedTuple, cache_dir: str = None):
         """
         An abstract class representing a Dataset.
 
@@ -28,12 +27,10 @@ class Dataset(Sequence):
         * `self.transformers = []`: These transformers are applied once on the dataset (before caching is done).
         * `self.realtime_transformers = []`: These transformers are applied every time a sample is retrieved. (e.g. random data augmentations)
         
-        :param config: The configuration used for your problem. (The problem parameters and train_batch_size are relevant for data loading.)
         :param dataset_input_type: The type of the DatasetInput that the dataset outputs. This is used to automatically collect attributes from get_<attrname>.
         :param dataset_output_type: The type of the DatasetOutput that the dataset outputs. This is used to automatically collect attributes from get_<attrname>.
         :param cache_dir: The directory where the dataset can cache itself. Caching allows faster loading, when complex transformations are required.
         """
-        self.config = config
         self.transformers = []
         self.realtime_transformers = []
         self._caching = False
@@ -184,7 +181,8 @@ class Dataset(Sequence):
         """
         raise NotImplementedError
 
-    def to_keras(self):
+    @inject_kwargs(batch_size="training_batch_size")
+    def to_keras(self, batch_size=1):
         """
         Converts the dataset into a batched keras dataset.
         
@@ -193,9 +191,10 @@ class Dataset(Sequence):
         :return: The type will be tf.keras.Sequence.
         """
         from deeptech.data.dataloader_keras import BatchedKerasDataset
-        return BatchedKerasDataset(self, self.config)
+        return BatchedKerasDataset(self, batch_size)
 
-    def to_pytorch(self):
+    @inject_kwargs(batch_size="training_batch_size")
+    def to_pytorch(self, batch_size=1):
         """
         Converts the dataset into a batched pytorch dataset.
         
@@ -204,7 +203,7 @@ class Dataset(Sequence):
         :return: The type will be torch.utils.data.DataLoader.
         """
         from deeptech.data.dataloader_pytorch import BatchedPytorchDataset
-        return BatchedPytorchDataset(self, self.config, self.config.data_loader_shuffle, self.config.data_loader_num_threads, self.config.data_device)
+        return BatchedPytorchDataset(self, batch_size)
 
     def to_disk(self, cache_path: str, verbose: bool = True) -> None:
         """
@@ -226,7 +225,7 @@ class Dataset(Sequence):
             info("Caching done.")
 
     @staticmethod
-    def from_disk(config: Config, cache_path: str) -> 'Dataset':
+    def from_disk(cache_path: str) -> 'Dataset':
         """
         Create a dataset from a cache on disk.
 
@@ -235,4 +234,4 @@ class Dataset(Sequence):
         :param version: The version of the dataset that should be loaded.
         :return: A Dataset object that represents the data that has been passed to "to_disk" when creating the cache.
         """
-        return Dataset(config, cache_dir=cache_path)
+        return Dataset(cache_dir=cache_path)

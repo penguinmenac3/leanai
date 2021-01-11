@@ -7,8 +7,10 @@ import torch
 from torch.nn import BatchNorm1d, BatchNorm2d, BatchNorm3d
 from torch.nn import Module
 from deeptech.core.annotations import RunOnlyOnce
+from deeptech.model.module_registry import add_module
 
 
+@add_module()
 class BatchNormalization(Module):
     def __init__(self):
         """

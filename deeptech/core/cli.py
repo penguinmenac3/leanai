@@ -6,46 +6,48 @@
 By using this package you will not need to write your own main for most networks. This helps reduce boilerplate code.
 """
 import argparse
+from deeptech.training.callbacks import DEFAULT_TRAINING_CALLBACKS
 import os
 import deeptech.core.logging as logging
-from deeptech.core.config import import_config
+from deeptech.core.config import import_config, set_main_config, inject_kwargs
 from deeptech.core.checkpoint import init_model, load_weights
 from deeptech.core.definitions import SPLIT_TRAIN, SPLIT_VAL
 
 
-def _setup_logging(name, config):
+@inject_kwargs(results_path="training_results_path")
+def _setup_logging(name, results_path=None):
     if name != "":
         name = "_" + name
-    logging.set_logger(os.path.join(config.training_results_path, logging.get_timestamp() + name, "log.txt"))
+    logging.set_logger(os.path.join(results_path, logging.get_timestamp() + name, "log.txt"))
 
 
-def _train(config, load_checkpoint, load_model):
+@inject_kwargs(epochs="training_epochs", name="training_name", create_dataset="data_dataset", create_model="model_model", create_loss="training_loss", create_optimizer="training_optimizer", create_trainer="training_trainer")
+def _train(load_checkpoint, load_model, epochs=1, name=None, create_dataset=None, create_model=None, create_loss=None, create_optimizer=None, create_trainer=None, training_callbacks=DEFAULT_TRAINING_CALLBACKS):
     """
     The main training loop.
     """
-    _setup_logging(config.training_name, config)
-    train_data = config.data_dataset(config=config, split=SPLIT_TRAIN).to_pytorch()
-    val_data = config.data_dataset(config=config, split=SPLIT_VAL).to_pytorch()
-    model = config.model_model(config=config)
+    _setup_logging(name)
+    train_data = create_dataset(split=SPLIT_TRAIN).to_pytorch()
+    val_data = create_dataset(split=SPLIT_VAL).to_pytorch()
+    model = create_model()
     init_model(model, train_data)
     if load_model is not None:
         logging.info("Loading model: {}".format(load_model))
         load_weights(load_model, model)
 
-    loss = config.training_loss(config=config, model=model)
-    optim = config.training_optimizer(config=config, model=model, loss=loss)
-    trainer = config.training_trainer(
-        config=config,
+    loss = create_loss(model=model)
+    optim = create_optimizer(model=model, loss=loss)
+    trainer = create_trainer(
         model=model,
         loss=loss,
         optim=optim,
-        callbacks=config.training_callbacks,
+        callbacks=training_callbacks,
         train_data=train_data,
         val_data=val_data
     )
     if load_checkpoint is not None:
         trainer.restore(load_checkpoint)
-    trainer.fit(epochs=config.training_epochs)
+    trainer.fit(epochs=epochs)
 
 
 __implementations__ = {"train": _train}
@@ -63,7 +65,7 @@ def set(name, function):
     __implementations__[name] = function
 
 
-def run_manual(mode, config, load_checkpoint=None, load_model=None):
+def run_manual(mode, config, load_checkpoint=None, load_model=None, zero_seeds=True):
     """
     Run the cli interface manually by giving a config and a state dict.
 
@@ -74,8 +76,16 @@ def run_manual(mode, config, load_checkpoint=None, load_model=None):
     :param load_checkpoint: (Optional[str]) If provided this checkpoint will be restored in the trainer/model.
     :param load_model: (Optional[str]) If provided this model will be loaded.
     """
+    if zero_seeds:
+        import torch
+        torch.manual_seed(0)
+        import numpy as np
+        np.random.seed(0)
+        import random
+        random.seed(0)
+    set_main_config(config)
     if mode in __implementations__ and __implementations__[mode] is not None:
-        __implementations__[mode](config, load_checkpoint, load_model)
+        __implementations__[mode](load_checkpoint, load_model)
     else:
         raise RuntimeError(f"Unknown mode {mode}. There is no implementation for this mode set.")
 
@@ -101,7 +111,12 @@ def run(config_class=None):
     parser.add_argument('--load_model', type=str, required=False, help='Path to the model weights to load.')
     parser.add_argument('--name', type=str, default="", required=False, help='Name to give the run.')
     parser.add_argument('--device', type=str, default=None, required=False, help='CUDA device id')
+    parser.add_argument('--debug', type=bool, default=False, required=False, help='If you are running with debug mode. This makes babilim verbose and print debug messages.')
     args = parser.parse_args()
+
+    if args.debug:
+        logging.DEBUG_VERBOSITY = args.debug
+        logging.debug(f"Set DEBUG_VERBOSITY={logging.DEBUG_VERBOSITY}")
 
     # Log args for reproducibility
     logging.info(f"Arg: --mode {args.mode}")

@@ -6,8 +6,10 @@
 from functools import partial
 import torch
 from torch.nn import Module
+from deeptech.model.module_registry import add_module
 
 
+@add_module()
 class Activation(Module):
     def __init__(self, activation, **kwargs):
         """

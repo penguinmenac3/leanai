@@ -6,13 +6,13 @@ This example shows how to solve fashion MNIST with a custom loss.
 First we import everything, then we write the config, then we implement the custom loss and finaly we tell deeptech to run this.
 """
 from deeptech.data.datasets import FashionMNISTDataset
-from deeptech.model.models import ImageClassifierSimple
+from deeptech.model.module_from_json import Module
 from deeptech.training import tensorboard
 from deeptech.training.trainers import SupervisedTrainer
 from deeptech.training.losses import SparseCrossEntropyLossFromLogits
 from deeptech.training.optimizers import smart_optimizer
 from deeptech.core import Config, cli
-from torch.nn import Module
+from torch.nn as nn
 from torch.optim import SGD
 
 
@@ -23,20 +23,18 @@ class FashionMNISTConfig(Config):
         self.data_dataset = FashionMNISTDataset
 
         # Config of the model
-        self.model_model = ImageClassifierSimple
-        self.model_conv_layers = [32, 32, 32]
-        self.model_dense_layers = [100]
-        self.model_classes = 10
-        self.training_batch_size = 32
+        self.model_model = lambda config: Module.create_from_file("deeptech/examples/mnist_model.json", "MNISTModel", num_classes=10, logits=True)
 
         # Config for training
         self.training_loss = MyLoss
         self.training_optimizer = smart_optimizer(SGD)
         self.training_trainer = SupervisedTrainer
         self.training_epochs = 10
+        self.training_batch_size = 32
+
 
 # Should be in a loss.py
-class MyLoss(Module):
+class MyLoss(nn.Module):
     def __init__(self, config=None, model=None):
         super().__init__()
         self.loss = SparseCrossEntropyLossFromLogits()

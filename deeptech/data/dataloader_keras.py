@@ -3,8 +3,6 @@ from math import ceil
 import numpy as np
 from typing import Sequence
 
-from deeptech.core import Config
-
 
 def isnamedtupleinstance(x):
     t = type(x)
@@ -16,23 +14,23 @@ def isnamedtupleinstance(x):
 
 
 class BatchedKerasDataset(tf.keras.utils.Sequence):
-    def __init__(self, dataset: Sequence, config: Config) -> None:
+    def __init__(self, dataset: Sequence, batch_size) -> None:
         """
         Make a batched data provider from any list object.
 
-        :param config: Is an ailab.Config object.
         :param dataset: Anything that implements the list interface (__len__ and __getitem__(idx)).
+        :param batch_size: The batch size used for the dataloader.
         """
         self.dataset = dataset
-        self.config = config
+        self.batch_size = batch_size
 
     def __len__(self):
-        return ceil(len(self.dataset) / self.config.training_batch_size)
+        return ceil(len(self.dataset) / self.training_batch_size)
 
     def __getitem__(self, index):
         features = []
         labels = []
-        batch_size = self.config.training_batch_size
+        batch_size = self.training_batch_size
         for idx in range(index * batch_size, min((index + 1) * batch_size, len(self.dataset))):
             feature, label = self.dataset[idx]
             features.append(feature)

@@ -5,8 +5,10 @@
 """
 import torch
 from torch.nn import Module
+from deeptech.model.module_registry import add_module
 
 
+@add_module()
 class Stack(Module):
     def __init__(self, axis):
         """
@@ -26,6 +28,7 @@ class Stack(Module):
         return torch.stack(tensor_list, dim=self.axis)
 
 
+@add_module()
 class Concat(Module):
     def __init__(self, axis):
         """

@@ -7,6 +7,7 @@ import torch
 from torch.nn import Module
 from torchvision.ops import roi_pool as _roi_pool
 from torchvision.ops import roi_align as _roi_align
+from deeptech.model.module_registry import add_module
 
 
 def _convert_boxes_to_roi_format(boxes):
@@ -25,7 +26,21 @@ def _convert_boxes_to_roi_format(boxes):
     return rois
 
 
-# Cell: 3
+@add_module()
+class BoxToRoi(Module):
+    def __init__(self, feature_map_scale=1) -> None:
+        super().__init__()
+        self.feature_map_scale = feature_map_scale
+    
+    def forward(self, boxes):
+        # Compute corners of rois
+        min_corner = boxes[:, :2, :] - boxes[:, 2:, :] / 2
+        max_corner = boxes[:, :2, :] + boxes[:, 2:, :] / 2
+        corners = torch.cat([min_corner, max_corner], dim=1)
+        return corners / self.feature_map_scale
+
+
+@add_module()
 class RoiPool(Module):
     def __init__(self, output_size, spatial_scale=1.0):
         """
@@ -33,8 +48,8 @@ class RoiPool(Module):
 
         Creates a callable object, when calling you can use these Arguments:
         * **features**: (Tensor[N, C, H, W]) input tensor
-        * **rois**: (Tensor[N, K, 4]) the box coordinates in (x1, y1, x2, y2) format where the regions will be taken from.
-        * **return**: (Tensor[N, K, C, output_size[0], output_size[1]]) The feature maps crops corresponding to the input rois.
+        * **rois**: (Tensor[N, 4, K]) the box coordinates in (cx, cy, w, h) format where the regions will be taken from.
+        * **return**: (Tensor[N, C * output_size[0] * output_size[1], K]) The feature maps crops corresponding to the input rois.
         
         Parameters to RoiPool constructor:
         :param output_size: (Tuple[int, int]) the size of the output after the cropping is performed, as (height, width)
@@ -46,16 +61,19 @@ class RoiPool(Module):
         
         
     def forward(self, features, rois):
+        rois = rois.transpose(1, 2).contiguous()
         torchvision_rois = _convert_boxes_to_roi_format(rois)
 
         result = _roi_pool(features, torchvision_rois, self.output_size, self.spatial_scale)
 
         # Fix output shape
         N, C, _, _ = features.shape
-        result = result.view((N, -1, C, self.output_size[0], self.output_size[1]))
+        result = result.view((N, -1, C * self.output_size[0]* self.output_size[1]))
+        result = result.transpose(1, 2).contiguous()
         return result
 
 
+@add_module()
 class RoiAlign(Module):
     def __init__(self, output_size, spatial_scale=1.0):
         """
@@ -63,8 +81,8 @@ class RoiAlign(Module):
 
         Creates a callable object, when calling you can use these Arguments:
         * **features**: (Tensor[N, C, H, W]) input tensor
-        * **rois**: (Tensor[N, K, 4]) the box coordinates in (x1, y1, x2, y2) format where the regions will be taken from.
-        * **return**: (Tensor[N, K, C, output_size[0], output_size[1]]) The feature maps crops corresponding to the input rois.
+        * **rois**: (Tensor[N, 4, K]) the box coordinates in (x1, y1, x2, y2) format where the regions will be taken from.
+        * **return**: (Tensor[N, C * output_size[0] * output_size[1], K]) The feature maps crops corresponding to the input rois.
         
         Parameters to RoiAlign constructor:
         :param output_size: (Tuple[int, int]) the size of the output after the cropping is performed, as (height, width)
@@ -75,6 +93,7 @@ class RoiAlign(Module):
         self.spatial_scale = spatial_scale
         
     def forward(self, features, rois):
+        rois = rois.transpose(1, 2).contiguous()
         torchvision_rois = _convert_boxes_to_roi_format(rois)
 
         # :param aligned: (bool) If False, use the legacy implementation.
@@ -84,5 +103,6 @@ class RoiAlign(Module):
 
         # Fix output shape
         N, C, _, _ = features.shape
-        result = result.view((N, -1, C, self.output_size[0], self.output_size[1]))
+        result = result.view((N, -1, C * self.output_size[0]* self.output_size[1]))
+        result = result.transpose(1, 2).contiguous()
         return result

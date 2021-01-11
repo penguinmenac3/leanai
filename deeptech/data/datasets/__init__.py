@@ -1,1 +1,4 @@
 from deeptech.data.datasets.fashion_mnist_dataset import FashionMNISTDataset
+from deeptech.data.datasets.casia_faces_dataset import CasiaFacesDataset
+from deeptech.data.datasets.coco_dataset import COCODataset
+from deeptech.data.datasets.images_in_classfolders_dataset import ImagesInClassfoldersDataset
