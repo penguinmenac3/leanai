@@ -6,6 +6,7 @@
 import json
 import numpy as np
 from torch import Tensor
+from deeptech.core import logging
 
 _summary_writer = None
 _summary_txt = None
@@ -79,6 +80,9 @@ def log_scalar(key, value):
         value = value.numpy()
     if key not in _accumulators:
         _accumulators[key] = []
+
+    if logging.DEBUG_VERBOSITY:
+        logging.debug("SCALAR {}: {}".format(key, value))
     _accumulators[key].append(value)
 
 def get_scalar_avg(key):

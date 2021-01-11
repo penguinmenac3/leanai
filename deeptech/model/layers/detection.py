@@ -25,23 +25,20 @@ class DetectionHead(Module):
 
     @RunOnlyOnce
     def build(self, features, anchors):
-        dim = anchors.shape[1] // 2
-        num_anchors = anchors.shape[2]
+        # assume shape of anchors = (batch, 4/6, num_anchors, N)
+        dim = self._get_dim(anchors)
+        num_anchors = self._get_num_anchors(anchors)
         self.deltas = Conv1D(filters=num_anchors*dim*2, kernel_size=1)
         if self.num_classes > 0:
             self.classification = Conv1D(filters=num_anchors*self.num_classes, kernel_size=1)
 
-    def forward(self, features, anchors):
-        """
-        Compute the detections given the features and anchors.
+    def _get_dim(self, anchors):
+        return anchors.shape[1] // 2  # as there is position and size per dimension
 
-        For shape definitions: B=Batchsize, C=#Channels, A=#Anchors, H=Height, W=Width, N=#Boxes.
-        Please note, that the shapes must be either of group (a) or of group (b) for all parameters.
+    def _get_num_anchors(self, anchors):
+        return anchors.shape[2]
 
-        :param features: The feature tensor of shape (a) "BCHW" or (b) "BCN".
-        :param anchors: The anchor tensor of shape (a) "BCAHW" or (b) "BCN".
-        :returns: The predicted boxes of shape (a) "BC(AWH)" or (b) "BCN". Note how N = (AWH) in the output, resulting in len(shape) == 3 in both cases.
-        """
+    def _normalize_inputs(self, features, anchors):
         features_in_shape = features.shape
         anchors_in_shape = anchors.shape
         if len(features_in_shape) == 4: # BCHW
@@ -54,24 +51,75 @@ class DetectionHead(Module):
         else:
             raise RuntimeError("Box tensor has an incompatible shape: {}".format(features_in_shape))
         assert len(features.shape) == 3
-        self.build(features, anchors)
+        return features, anchors
 
-        dim = anchors.shape[1] // 2
-        num_anchors = anchors.shape[2]
-
+    def _forward_class_ids(self, features):
         class_ids = None
         if self.num_classes > 0:
             class_ids = self.classification(features)
             class_ids = class_ids.reshape((class_ids.shape[0], self.num_classes, -1))
+        return class_ids
 
+    def _forward_boxes(self, features, anchors):
         deltas = self.deltas(features)
-        deltas = deltas.reshape((deltas.shape[0], dim*2, num_anchors, -1))
+        deltas = deltas.reshape((deltas.shape[0], self._get_dim(anchors)*2, -1))
+        return deltas
 
-        pos = (deltas[:, :dim] * anchors[:, dim:]) + anchors[:, :dim]
-        size = torch.exp(deltas[:, dim:]) * anchors[:, dim:]
+    def forward(self, features, anchors):
+        """
+        Compute the detections given the features and anchors.
+
+        For shape definitions: B=Batchsize, C=#Channels, A=#Anchors, H=Height, W=Width, N=#Boxes.
+        Please note, that the shapes must be either of group (a) or of group (b) for all parameters.
+
+        :param features: The feature tensor of shape (a) "BCHW" or (b) "BCN".
+        :param anchors: The anchor tensor of shape (a) "BCAHW" or (b) "BCN".
+        :returns: The predicted boxes of shape (a) "BC(AWH)" or (b) "BCN". Note how N = (AWH) in the output, resulting in len(shape) == 3 in both cases.
+        """
+        features, anchors = self._normalize_inputs(features, anchors)
+        self.build(features, anchors)
+        return self._forward_boxes(features, anchors), self._forward_class_ids(features)
+
+
+@add_module()
+class LogDeltasToBoxes(Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def forward(self, deltas, anchors):
+        dim = anchors.shape[1] // 2
+        anchor_pos = anchors[:, :dim]
+        anchor_size = anchors[:, dim:]
+        delta_pos = deltas[:, :dim]
+        delta_size = deltas[:, dim:]
+
+        pos = (delta_pos * anchor_size) + anchor_pos
+        size = torch.exp(delta_size) * anchor_size
         boxes = torch.cat([pos, size], dim=1)
-        boxes =  boxes.reshape((boxes.shape[0], boxes.shape[1], -1))
-        return boxes, class_ids
+        return boxes
+
+
+@add_module()
+class DeltasToBoxes(Module):
+    def __init__(self, log_deltas=True) -> None:
+        super().__init__()
+        self.log_deltas = log_deltas
+
+    def forward(self, deltas, anchors):
+        dim = anchors.shape[1] // 2
+        anchor_pos = anchors[:, :dim]
+        anchor_size = anchors[:, dim:]
+        delta_pos = deltas[:, :dim]
+        delta_size = deltas[:, dim:]
+
+        if not self.log_deltas:
+            pos = delta_pos + anchor_pos
+            size = delta_size + anchor_size
+        else:
+            pos = (delta_pos * anchor_size) + anchor_pos
+            size = torch.exp(delta_size) * anchor_size
+        boxes = torch.cat([pos, size], dim=1)
+        return boxes
 
 
 @add_module()
@@ -97,8 +145,7 @@ class GridAnchorGenerator(Module):
         self.height, self.width = height, width
         self.base_size = base_size
 
-    @RunOnlyOnce
-    def build(self, features):
+    def _build_anchor_shapes(self, features):
         anchor_shapes = []
         for scale in self.scales:
             for ratio in self.ratios:
@@ -107,22 +154,30 @@ class GridAnchorGenerator(Module):
                 width = scale * ratio_sqrts * self.base_size
                 size = [width, height]
                 anchor_shapes.append(size)
+        return anchor_shapes
 
+    def _get_anchor_grid_size(self, features):
         _,_,h_feat, w_feat = features.shape
-        if self.height < 0:
-            self.height = h_feat
-        if self.width < 0:
-            self.width = w_feat
+        height = self.height if self.height >= 0 else h_feat
+        width = self.width if self.width >= 0 else w_feat
+        return height, width
 
+    def _build_anchors_from_shapes(self, anchor_shapes, size):
         num_anchors = len(anchor_shapes)
-        anchors = np.zeros((1, 4, num_anchors, self.height, self.width), dtype=np.float32)
+        anchors = np.zeros((1, 4, num_anchors, size[0], size[1]), dtype=np.float32)
         for anchor_idx in range(num_anchors):
-            for y in range(self.height):
-                for x in range(self.width):
+            for y in range(size[0]):
+                for x in range(size[1]):
                     anchors[0, 0, anchor_idx, y, x] = (x + 0.5) * self.feature_map_scale
                     anchors[0, 1, anchor_idx, y, x] = (y + 0.5) * self.feature_map_scale
                     anchors[0, 2:, anchor_idx, y, x] = anchor_shapes[anchor_idx]
+        return anchors
 
+    @RunOnlyOnce
+    def build(self, features):
+        anchor_shapes = self._build_anchor_shapes(features)
+        size = self._get_anchor_grid_size(features)
+        anchors = self._build_anchors_from_shapes(anchor_shapes, size)
         self.anchors = torch.from_numpy(anchors).to(features.device)
 
     def forward(self, features):

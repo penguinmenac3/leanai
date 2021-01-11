@@ -25,6 +25,6 @@
         {"type": "FullyConnected", "out_features": 4096},
         {"type": "Activation", "activation": "relu"},
         {"type": "Dense", "out_features": 1000},
-        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "{spec:logits}"}
+        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "spec:logits"}
     ]}
 }

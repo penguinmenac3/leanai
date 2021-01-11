@@ -20,6 +20,6 @@ def add_lib_from_json(filename):
     with open(filename, 'r') as f:
         data = jstyleson.load(f)
         _json_module_library.update(data)
-    path = os.path.join(*filename.split(os.sep)[:-1])
+    path = os.sep.join(filename.split(os.sep)[:-1])
     _resolve_includes(data, path)
     return data

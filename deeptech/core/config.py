@@ -7,7 +7,61 @@ import sys
 from typing import Any
 import importlib
 import inspect
+from inspect import Parameter
 from deeptech.training.callbacks import DEFAULT_TRAINING_CALLBACKS
+
+_config = None
+def set_main_config(config):
+    """
+    Set the config that is used for inject_kwargs.
+
+    :param config: A configuration object. It must have the parameters as instance attributes.
+    """
+    global _config
+    if _config is not None:
+        raise RuntimeError("There must not be more than one config!")
+    _config = config
+
+def get_main_config():
+    return _config
+
+def inject_kwargs(**mapping):
+    """
+    Inject kwargs of the function by using the config.
+
+    The preference order is passed > config > default.
+
+    :param **mapping: (Optional) You can provide keyword arguments to map the name
+        of an argument to the config, e.g. `@inject_kwargs(path="data_path")`.
+        Note that `path` is the name of the keyword argument and `data_path` the
+        name of the field in the config.
+    """
+    def _get_kwargs(f):
+        ARG_TYPES = [
+            Parameter.POSITIONAL_ONLY,
+            Parameter.POSITIONAL_OR_KEYWORD,
+            Parameter.KEYWORD_ONLY,
+        ]
+        args = [n for n, p in inspect.signature(f).parameters.items() if p.kind in ARG_TYPES]
+        kwargs = [n for n, p in inspect.signature(f).parameters.items() if p.kind in ARG_TYPES and p.default != inspect._empty]
+        return args, kwargs
+
+    def wrapper(fun):
+        argnames, kwargnames = _get_kwargs(fun)
+        def wrapped(*args, **kwargs):
+            namedargs = dict(list(zip(argnames[:len(args)], args)))
+            config_dict = _config.__dict__
+            for name in kwargnames:
+                if name not in kwargs and name not in namedargs:
+                    if name == "config": # Legacy mode (inject the config object)
+                        kwargs[name] = _config
+                    else:  # New mode (overwrites kwargs with config values if available)
+                        config_name = mapping[name] if name in mapping else name
+                        if config_name in config_dict:
+                            kwargs[name] = config_dict[config_name]
+            return fun(*args, **kwargs)
+        return wrapped
+    return wrapper
 
 
 class Config(object):
@@ -31,7 +85,6 @@ class Config(object):
         * `self.training_results_path = training_results_path`: The path where training results are stored is set to what is passed in the constructor. 
         * `self.training_name = training_name`: The name that is used for the experiment is set to what is passed in the constructor.
         * `self.training_callbacks = DEFAULT_TRAINING_CALLBACKS`: A list of callbacks that are used in the order they appear in the list by the trainer.
-        * `self.training_lr_scheduler = None`: A learning rate scheduler that is used by the trainer to update the learning rate.
 
         Arguments:
         :param training_name: (str) The name how to name your experiment.
@@ -45,7 +98,6 @@ class Config(object):
         self.training_results_path = training_results_path
         self.training_name = training_name
         self.training_callbacks = DEFAULT_TRAINING_CALLBACKS
-        self.training_lr_scheduler = None
 
         # Required for general dataset loading. (Non architecture specific.)
         self.data_path = data_path
@@ -54,7 +106,7 @@ class Config(object):
         self.data_train_split = 0.6
         self.data_val_split = 0.2
         self.data_test_split = 0.2
-        self.data_device = "cpu"
+        self.data_device = "auto"
 
     def __repr__(self) -> str:
         return "Config(" + self.__str__() + ")"
@@ -121,3 +173,41 @@ def import_checkpoint_config(config_file: str, *args, **kwargs) -> Any:
     config = import_config(config_file_name, *args, **kwargs)
     sys.path.remove(config_folder)
     return config
+
+
+if __name__ == "__main__":
+    @inject_kwargs()
+    def test_fun(a,b,c=42,d=99):
+        return a,b,c,d
+
+    class TestClass:
+        @inject_kwargs(foobar="the_number")
+        def class_fun(self, b, c=42, foobar=99):
+            return 10, b, c, foobar
+
+    class TestConfig(Config):
+        def __init__(self):
+            super().__init__("test", "test", "test")
+            self.c = 1
+            self.d = 2
+            self.the_number = 42
+    set_main_config(TestConfig())
+    
+    result = test_fun(10, 3, 2)
+    assert result[0] == 10
+    assert result[1] == 3
+    assert result[2] == 2
+    assert result[3] == 2
+
+    result = test_fun(b=10, a=3, d=4)
+    assert result[0] == 3
+    assert result[1] == 10
+    assert result[2] == 1
+    assert result[3] == 4
+
+    test_class = TestClass()
+    result = test_class.class_fun(3, 2)  
+    assert result[0] == 10
+    assert result[1] == 3
+    assert result[2] == 2
+    assert result[3] == 42

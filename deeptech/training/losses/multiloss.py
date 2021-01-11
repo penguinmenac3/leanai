@@ -9,7 +9,7 @@ from deeptech.training import tensorboard
 
 
 class MultiLoss(Module):
-    def __init__(self, config=None, model=None, **losses):
+    def __init__(self, model=None, **losses):
         """
         Compute the multiloss on the given losses.
 

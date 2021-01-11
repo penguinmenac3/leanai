@@ -2,9 +2,11 @@ import unittest
 
 import numpy as np
 import torch
+import deeptech.model.module_from_json as mfj
 from deeptech.model.module_from_json import Module
 from deeptech.model.module_registry import add_module, add_lib_from_json, _json_module_library
 
+mfj.WARN_DISABLED_LAYERS = False
 
 class TestModuleFromJSON(unittest.TestCase):
     def setUp(self) -> None:

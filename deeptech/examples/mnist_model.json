@@ -18,6 +18,6 @@
         {"type": "Flatten"},
         {"type": "FCBlock", "out_features": 18},
         {"type": "Dense", "out_features": "spec:num_classes"},
-        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "{spec:logits}"}
+        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "spec:logits"}
     ]}
 }

@@ -1,6 +1,5 @@
 numpy
-packaging
 imageio
-matplotlib
 jstyleson
-nose2
+torch
+torchvision

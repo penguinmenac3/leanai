@@ -6,6 +6,7 @@
 import numpy as np
 from collections import namedtuple
 from torchvision.datasets import FashionMNIST
+from deeptech.core.config import inject_kwargs
 from deeptech.data.dataset import Dataset
 from deeptech.core.definitions import SPLIT_TRAIN
 
@@ -15,9 +16,10 @@ MNISTOutputType = namedtuple("MNISTOutput", ["class_id"])
 
 
 class FashionMNISTDataset(Dataset):
-    def __init__(self, config, split) -> None:
-        super().__init__(config, MNISTInputType, MNISTOutputType)
-        self.dataset = FashionMNIST(config.data_path, train=split == SPLIT_TRAIN, download=True)
+    @inject_kwargs()
+    def __init__(self, split, data_path=None) -> None:
+        super().__init__(MNISTInputType, MNISTOutputType)
+        self.dataset = FashionMNIST(data_path, train=split == SPLIT_TRAIN, download=True)
         self.all_sample_tokens = range(len(self.dataset))
 
     def get_image(self, sample_token):
@@ -36,10 +38,10 @@ class FashionMNISTDataset(Dataset):
 
 
 def test_visualization(data_path):
-    from deeptech.core.config import Config
+    from deeptech.core.config import Config, set_main_config
     import matplotlib.pyplot as plt
-    config = Config(training_name="test_visualization", data_path=data_path, training_results_path="test")
-    dataset = FashionMNISTDataset(config, SPLIT_TRAIN)
+    set_main_config(Config(training_name="test_visualization", data_path=data_path, training_results_path="test"))
+    dataset = FashionMNISTDataset(SPLIT_TRAIN)
     image, class_id = dataset[0]
     plt.title(class_id.class_id)
     plt.imshow(image[0])

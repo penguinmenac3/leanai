@@ -12,7 +12,7 @@ from deeptech.core.logging import error, warn
 
 
 class SupervisedTrainer(BaseTrainer):
-    def __init__(self, config, model, loss, optim, callbacks, train_data, val_data):
+    def __init__(self, model, loss, optim, callbacks, train_data, val_data):
         """
         Create a trainer for supervised training scenarios.
 
@@ -27,7 +27,7 @@ class SupervisedTrainer(BaseTrainer):
         :param callbacks: Any callbacks that you want to add. You should always write callbacks=DEFAULT_CALLBACKS+[MyCallback], otherwise the default callbacks will not be called.
         Callbacks will be called in the order as specified in this list. So make sure your callbacks are in the correct order (and when in doubt DEFAULT_CALLBACKS first, yours later).
         """
-        super().__init__(config=config, model=model, loss=loss, optim=optim, callbacks=callbacks, train_data=train_data, val_data=val_data)
+        super().__init__(model=model, loss=loss, optim=optim, callbacks=callbacks, train_data=train_data, val_data=val_data)
 
     def run_epoch(self, dataloader, phase: str, epoch: int):
         """
@@ -56,12 +56,14 @@ class SupervisedTrainer(BaseTrainer):
             self.optimizer.zero_grad()
             network_output = self.model(*network_inputs)
             if isinstance(network_output, Tensor):
-                    if network_output.isnan().any():
-                        error("NaN NetworkOutput: {}".format(network_output))
-                        raise ValueError("NetworkOutput got nan.")
+                if network_output.isnan().any():
+                    print()
+                    error("NaN NetworkOutput: {}".format(network_output))
+                    raise ValueError("NetworkOutput got nan.")
             else:
                 for name, p in network_output._asdict().items():
                     if p.isnan().any():
+                        print()
                         error("NaN NetworkOutput {}: {}".format(name, p))
                         raise ValueError("NetworkOutput {} got nan.".format(name))
             loss_result = self.loss(y_true=targets, y_pred=network_output)
@@ -78,8 +80,6 @@ class SupervisedTrainer(BaseTrainer):
                 if phase == "train":
                     loss_result.backward()
                     self.optimizer.step()
-                    if self.config.training_lr_scheduler is not None:
-                        self.config.training_lr_scheduler.step()
 
             for callback in self.callbacks:
                 callback.on_iter_end(network_output, loss_result)

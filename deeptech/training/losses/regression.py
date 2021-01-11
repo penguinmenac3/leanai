@@ -8,7 +8,7 @@ from torch.nn import SmoothL1Loss as _SmoothL1Loss
 
 
 class SmoothL1Loss(Module):
-    def __init__(self, config=None, model=None, reduction: str = "mean"):
+    def __init__(self, model=None, reduction: str = "mean"):
         """
         Compute a smooth l1 loss.
         

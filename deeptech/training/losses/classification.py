@@ -10,7 +10,7 @@ from torch.nn import BCEWithLogitsLoss
 
 
 class SparseCrossEntropyLossFromLogits(Module):
-    def __init__(self, config=None, model=None, reduction: str = "mean"):
+    def __init__(self, model=None, reduction: str = "mean"):
         """
         Compute a sparse cross entropy.
         
@@ -33,13 +33,13 @@ class SparseCrossEntropyLossFromLogits(Module):
         if not isinstance(y_pred, Tensor):
             y_pred = y_pred.class_id
         y_true = y_true.long()
-        if len(y_true.shape) > 2 and y_true.shape[1] == 1:
+        if len(y_true.shape) == len(y_pred.shape) and y_true.shape[1] == 1:
             y_true = y_true[:, 0]
         return self.loss_fun(y_pred, y_true)
 
 
 class BinaryCrossEntropyLossFromLogits(Module):
-    def __init__(self, config=None, model=None, reduction: str = "mean"):
+    def __init__(self, model=None, reduction: str = "mean"):
         """
         Compute a binary cross entropy.
         
@@ -65,7 +65,7 @@ class BinaryCrossEntropyLossFromLogits(Module):
 
 
 class SparseCategoricalAccuracy(Module):
-    def __init__(self, config=None, model=None, reduction: str = "mean", axis=-1):
+    def __init__(self, model=None, reduction: str = "mean", axis=-1):
         """
         Compute the sparse mean squared error.
         
