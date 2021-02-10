@@ -4,6 +4,7 @@
 > A trainer for supervised approaches.
 """
 import torch
+from typing import Optional
 from torch import Tensor
 from deeptech.core.definitions import PHASE_TRAIN, PHASE_VAL
 from deeptech.training.trainers.base_trainer import BaseTrainer
@@ -44,6 +45,9 @@ class SupervisedTrainer(BaseTrainer):
         """
         if self.model is None:
             raise RuntimeError("You must compile the trainer first!")
+
+        if torch.has_cuda:
+            torch.cuda.empty_cache()
         for callback in self.callbacks:
             callback.on_epoch_begin(dataloader, phase, epoch)
 

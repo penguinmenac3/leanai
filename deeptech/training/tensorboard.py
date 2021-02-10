@@ -4,8 +4,11 @@
 > A little helper making tensorboard smarter, allowing for mean, std, min, max logging of a loss over a few iterations.
 """
 import json
+import GPUtil
+import psutil
 import numpy as np
 from torch import Tensor
+from torch.functional import tensordot
 from deeptech.core import logging
 
 _summary_writer = None
@@ -63,6 +66,27 @@ def flush_and_reset_accumulators(samples_seen, log_std, log_min, log_max):
             with open(_summary_txt, "a") as f:
                 f.write(json.dumps(results)+"\n")
     reset_accumulators()
+
+
+def log_stats(gpus_separately=False):
+    """
+    Log the cpu, ram and gpu usage.
+    """
+    cpu = psutil.cpu_percent()
+    ram = psutil.virtual_memory().used / 1000000000
+    log_scalar("sys/SYS_CPU (%)", cpu)
+    log_scalar("sys/SYS_RAM (GB)", ram)
+    total_gpu_load = 0
+    total_gpu_mem = 0
+    for gpu in GPUtil.getGPUs():
+        total_gpu_load += gpu.load
+        total_gpu_mem += gpu.memoryUsed
+        if gpus_separately:
+            log_scalar("sys/GPU_UTIL_{}".format(gpu.id), gpu.load)
+            log_scalar("sys/GPU_MEM_{}".format(gpu.id), gpu.memoryUtil)
+    log_scalar("sys/GPU_UTIL (%)", total_gpu_load)
+    log_scalar("sys/GPU_MEM (GB)", total_gpu_mem / 1000)
+
 
 def log_scalar(key, value):
     """
