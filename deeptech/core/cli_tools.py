@@ -78,6 +78,3 @@ def vscode_run_config(args):
         f.write("\n")
     print("Added configuration under name: {}. You may select it in the debug menu now.".format(args.name))
 
-
-if __name__ == "__main__":
-    main()

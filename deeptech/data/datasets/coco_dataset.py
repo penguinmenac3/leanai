@@ -20,8 +20,8 @@ class COCODataset(Dataset):
     OutputType = namedtuple("Output", ["class_ids", "boxes", "polygons"])
 
     @inject_kwargs()
-    def __init__(self, split, DatasetInput=InputType, DatasetOutput=OutputType, data_version=None, data_path="None", model_categories=None, data_image_size=None) -> None:
-        super().__init__(DatasetInput, DatasetOutput)
+    def __init__(self, split, DatasetInput=InputType, DatasetOutput=OutputType, data_version=None, data_path="None", model_categories=[], data_image_size=None) -> None:
+        super().__init__(split, DatasetInput, DatasetOutput)
         version = data_version  # 2014, 2017
         self.data_image_size = data_image_size
         self.image_folder = os.path.join(data_path, "images", f"{split}{version}")
@@ -32,7 +32,7 @@ class COCODataset(Dataset):
 
         self.class_id_to_category = {0: 0} # Background
         category_id_to_class_id = {0: 0}  # Background
-        if model_categories is None:
+        if len(model_categories) == 0:
             model_categories = ["background"]
             for category in instances["categories"]:
                 model_categories.append(category["name"])
@@ -138,7 +138,7 @@ def test_visualization(data_path):
     config = Config(training_name="test_visualization", data_path=data_path, training_results_path="test")
     config.data_version = "2014"
     config.data_image_size = (800,600)
-    config.model_categories = None
+    config.model_categories = []
     set_main_config(config)
     dataset = COCODataset(SPLIT_TRAIN)
     for inputs, target in dataset:

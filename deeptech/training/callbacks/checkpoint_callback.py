@@ -53,7 +53,9 @@ class CheckpointCallback(BaseCallback):
 
     def _save(self, name: str) -> None:
         checkpoint_sub_path = os.path.join("checkpoints", name)
-        checkpoint_path = os.path.join(get_log_path(), checkpoint_sub_path)
+        log_path = get_log_path()
+        assert log_path is not None
+        checkpoint_path = os.path.join(log_path, checkpoint_sub_path)
         save_state({
             "epoch": self.epoch,
             "model": self.model.state_dict(),

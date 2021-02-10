@@ -5,7 +5,7 @@
 """
 import time
 from deeptech.core.definitions import PHASE_TRAIN
-from deeptech.core.logging import info, log_progress, status, create_checkpoint_structure, get_log_path, warn
+from deeptech.core.logging import error, info, log_progress, status, create_checkpoint_structure, get_log_path, warn
 from deeptech.training.callbacks.base_callback import BaseCallback
 from deeptech.training import tensorboard
 
@@ -26,7 +26,8 @@ class LogCallback(BaseCallback):
         super().__init__()
         self.start_time = 0
         self.epoch_start_time = 0
-        self.N = 1
+        self.N = 0
+        self.iter_cache = {}
         self.train_log_steps = train_log_steps
 
     def on_fit_start(self, model, train_dataloader, dev_dataloader, loss, optimizer, start_epoch: int, epochs: int) -> int:
@@ -53,7 +54,14 @@ class LogCallback(BaseCallback):
 
     def on_epoch_begin(self, dataloader, phase: str, epoch: int) -> None:
         super().on_epoch_begin(dataloader, phase, epoch)
-        self.N = len(dataloader)
+        try:
+            self.N = len(dataloader)
+        except:
+            if dataloader in self.iter_cache:
+                self.N = self.iter_cache[dataloader]
+            else:
+                error("Cannot get length of dataloader. Provide a length to the dataloader. Length will be measured during first epoch.")
+                self.N = 0
         self.epoch_start_time = time.time()
         log_progress(goal=phase, progress=0, score=0)
 
@@ -62,7 +70,13 @@ class LogCallback(BaseCallback):
 
     def on_iter_end(self, predictions, loss_result) -> None:
         elapsed_time = time.time() - self.epoch_start_time
-        eta = elapsed_time / (self.iter + 1) * (self.N - (self.iter + 1))
+        if self.N > 0:
+            eta = elapsed_time / (self.iter + 1) * (self.N - (self.iter + 1))
+            progress = (self.iter + 1) / self.N
+        else:
+            self.iter_cache[self.active_dataloader] = self.iter + 1
+            eta = 0
+            progress = 0
         loss_avg = tensorboard.get_scalar_avg("loss/total")
         learning_rates = []
         for param_group in self.optimizer.param_groups:
@@ -70,7 +84,7 @@ class LogCallback(BaseCallback):
         learning_rates = ", ".join(learning_rates)
         status("{} {}/{} (ETA {}) - Loss {:.3f} - LR {}".format(self.phase, self.iter + 1, self.N, _format_time(eta), loss_avg, learning_rates), end="")
         if self.iter % self.train_log_steps == self.train_log_steps - 1:
-            log_progress(goal="{} {}/{}".format(self.phase, self.epoch, self.epochs), progress=(self.iter + 1) / self.N, score=loss_avg)
+            log_progress(goal="{} {}/{}".format(self.phase, self.epoch, self.epochs), progress=progress, score=loss_avg)
         super().on_iter_end(predictions, loss_result)
 
     def on_epoch_end(self) -> None:

@@ -4,15 +4,16 @@
 > A base class for implementing datasets with ease.
 """
 from deeptech.core.config import inject_kwargs
-from typing import Any, Sequence, Tuple, NamedTuple
+from typing import Any, Tuple
 import traceback
 import os
 import sys
 import pickle
-from deeptech.core.logging import info, status
+from deeptech.core.logging import info
 
-class Dataset(Sequence):
-    def __init__(self, dataset_input_type=NamedTuple, dataset_output_type=NamedTuple, cache_dir: str = None):
+
+class Dataset(object):
+    def __init__(self, split: str, dataset_input_type, dataset_output_type, cache_dir: str = None):
         """
         An abstract class representing a Dataset.
 
@@ -26,24 +27,31 @@ class Dataset(Sequence):
         There are two types of transformers (which are called in the order listed here):
         * `self.transformers = []`: These transformers are applied once on the dataset (before caching is done).
         * `self.realtime_transformers = []`: These transformers are applied every time a sample is retrieved. (e.g. random data augmentations)
-        
-        :param dataset_input_type: The type of the DatasetInput that the dataset outputs. This is used to automatically collect attributes from get_<attrname>.
-        :param dataset_output_type: The type of the DatasetOutput that the dataset outputs. This is used to automatically collect attributes from get_<attrname>.
+
+        :param split: The datasplit, typically one of train/val/test.
+        :param dataset_input_type: (NamedTuple typedef) The type of the DatasetInput that the dataset outputs. This is used to automatically collect attributes from get_<attrname>.
+        :param dataset_output_type: (NamedTuple typedef) The type of the DatasetOutput that the dataset outputs. This is used to automatically collect attributes from get_<attrname>.
         :param cache_dir: The directory where the dataset can cache itself. Caching allows faster loading, when complex transformations are required.
         """
+        super().__init__()
+        self.split = split
         self.transformers = []
         self.realtime_transformers = []
         self._caching = False
-        self._cache_dir = cache_dir
         self._cache_indices = {}
         self._cached_len = -1
+        self._cache_dir = cache_dir
         if self._cache_dir is not None:
-            self.init_caching(cache_dir)
+            self.init_caching(self._cache_dir)
             self._cached_len = len(self._cache_indices)
         self.all_sample_tokens = []
         self.sample_tokens = None
         self.dataset_input_type = dataset_input_type
         self.dataset_output_type = dataset_output_type
+
+    def __iter__(self):
+        for idx in range(len(self)):
+            yield self[idx]
 
     def set_sample_token_filter(self, filter_fun):
         """
@@ -60,7 +68,7 @@ class Dataset(Sequence):
         else:
             self.sample_tokens = list(filter(filter_fun, self.all_sample_tokens))
 
-    def init_caching(self, cache_dir):
+    def init_caching(self, cache_dir: str):
         """
         Initialize caching for quicker access once the data was cached once.
         
@@ -82,13 +90,14 @@ class Dataset(Sequence):
             if cf.endswith(".pk"):
                 self._cache_indices[int(cf.replace(".pk", ""))] = os.path.join(self._cache_dir, cf)
 
-    def _cache(self, index: int, value) -> None:
+    def _cache(self, index: int, value: Any) -> None:
+        assert self._cache_dir is not None
         fp = os.path.join(self._cache_dir, "{:09d}.pk".format(index))
         with open(fp, "wb") as f:
             pickle.dump(value, f)
         self._cache_indices[index] = fp
 
-    def _fill_type_using_getters(self, namedtuple_type, sample_token):
+    def _fill_type_using_getters(self, namedtuple_type, sample_token: int):
         data = {}
         for k in namedtuple_type._fields:
             getter = getattr(self, "get_{}".format(k), None)
@@ -137,7 +146,7 @@ class Dataset(Sequence):
                 sample = transform(*sample)
 
             if self._caching:
-                return self._cache(index, sample)
+                self._cache(index, sample)
 
         # Apply real time transformers after caching. Realtime is not cached
         for transform in self.realtime_transformers:
@@ -152,7 +161,8 @@ class Dataset(Sequence):
         # If not initialized initialize
         if self.sample_tokens is None:
             self.set_sample_token_filter(None)
-
+        
+        assert self.sample_tokens is not None
         return len(self.sample_tokens)
 
     @property
@@ -182,7 +192,7 @@ class Dataset(Sequence):
         raise NotImplementedError
 
     @inject_kwargs(batch_size="training_batch_size")
-    def to_keras(self, batch_size=1):
+    def to_keras(self, batch_size: int = 1):
         """
         Converts the dataset into a batched keras dataset.
         
@@ -194,7 +204,7 @@ class Dataset(Sequence):
         return BatchedKerasDataset(self, batch_size)
 
     @inject_kwargs(batch_size="training_batch_size")
-    def to_pytorch(self, batch_size=1):
+    def to_pytorch(self, batch_size: int = 1):
         """
         Converts the dataset into a batched pytorch dataset.
         
@@ -204,34 +214,3 @@ class Dataset(Sequence):
         """
         from deeptech.data.dataloader_pytorch import BatchedPytorchDataset
         return BatchedPytorchDataset(self, batch_size)
-
-    def to_disk(self, cache_path: str, verbose: bool = True) -> None:
-        """
-        Write a dataset as a cache to the disk.
- 
-        :param cache_path: The path where the cache should be written.
-        :param verbose: If info on progress should be printed, defaults to True.
-        """
-        self.init_caching(cache_path)
-        if verbose:
-            info("Caching dataset to {}".format(cache_path))
-        N = len(self)
-        for i, _ in enumerate(self):
-            if verbose:
-                status("{}/{}".format(i, N), end="")
-
-        if verbose:
-            info("")
-            info("Caching done.")
-
-    @staticmethod
-    def from_disk(cache_path: str) -> 'Dataset':
-        """
-        Create a dataset from a cache on disk.
-
-        :param config: The configuration for the dataset.
-        :param cache_path: The path to the cache.
-        :param version: The version of the dataset that should be loaded.
-        :return: A Dataset object that represents the data that has been passed to "to_disk" when creating the cache.
-        """
-        return Dataset(cache_dir=cache_path)

@@ -8,6 +8,7 @@ from typing import Any
 import importlib
 import inspect
 from inspect import Parameter
+from deeptech.core.logging import warn
 from deeptech.training.callbacks import DEFAULT_TRAINING_CALLBACKS
 
 _config = None
@@ -19,7 +20,7 @@ def set_main_config(config):
     """
     global _config
     if _config is not None:
-        raise RuntimeError("There must not be more than one config!")
+        warn("You are overwriting the main config. This might cause bugs!")
     _config = config
 
 def get_main_config():
@@ -50,7 +51,7 @@ def inject_kwargs(**mapping):
         argnames, kwargnames = _get_kwargs(fun)
         def wrapped(*args, **kwargs):
             namedargs = dict(list(zip(argnames[:len(args)], args)))
-            config_dict = _config.__dict__
+            config_dict = _config.__dict__ if _config is not None else {}
             for name in kwargnames:
                 if name not in kwargs and name not in namedargs:
                     if name == "config": # Legacy mode (inject the config object)
@@ -97,6 +98,7 @@ class Config(object):
         self.training_initial_lr = 0.001
         self.training_results_path = training_results_path
         self.training_name = training_name
+        self.training_name_prefix_time = True
         self.training_callbacks = DEFAULT_TRAINING_CALLBACKS
 
         # Required for general dataset loading. (Non architecture specific.)

@@ -1,7 +1,6 @@
 import tensorflow as tf
 from math import ceil
 import numpy as np
-from typing import Sequence
 
 
 def isnamedtupleinstance(x):
@@ -14,7 +13,7 @@ def isnamedtupleinstance(x):
 
 
 class BatchedKerasDataset(tf.keras.utils.Sequence):
-    def __init__(self, dataset: Sequence, batch_size) -> None:
+    def __init__(self, dataset, batch_size) -> None:
         """
         Make a batched data provider from any list object.
 

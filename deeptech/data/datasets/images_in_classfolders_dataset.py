@@ -3,23 +3,23 @@
 
 > An implementation of a dataset where the images are stored in folders which have the class names.
 """
+from typing import NamedTuple
 import numpy as np
 import os
 import cv2
-from collections import namedtuple
 from deeptech.core.config import inject_kwargs
 from deeptech.data.dataset import Dataset
 from deeptech.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 
 
-InputType = namedtuple("Input", ["image"])
-OutputType = namedtuple("Output", ["class_id"])
+InputType = NamedTuple("Input", image=np.ndarray)
+OutputType = NamedTuple("Output", class_id=np.ndarray)
 
 
 class ImagesInClassfoldersDataset(Dataset):
     @inject_kwargs()
-    def __init__(self, split, data_path="None", data_train_split=0.6, data_val_split=0.2, data_test_split=0.2) -> None:
-        super().__init__(InputType, OutputType)
+    def __init__(self, split: str, data_path="", data_train_split=0.6, data_val_split=0.2, data_test_split=0.2) -> None:
+        super().__init__(split, InputType, OutputType)
         self.data_path = data_path
         self.classes = os.listdir(data_path)
         self.all_sample_tokens = []

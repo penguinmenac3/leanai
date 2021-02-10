@@ -90,10 +90,10 @@ class SparseCategoricalAccuracy(Module):
         if not isinstance(y_pred, Tensor):
             y_pred = y_pred.class_id
 
-        pred_class = y_pred.argmax(axis=self.axis)
+        pred_class = y_pred.argmax(dim=self.axis)
         true_class = y_true.long()
         correct_predictions = pred_class == true_class
-        loss = correct_predictions.float().mean(axis=self.axis)
+        loss = correct_predictions.float().mean(dim=self.axis)
         if self.reduction == "none":
             return loss
         elif self.reduction == "sum":

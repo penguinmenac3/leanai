@@ -12,7 +12,7 @@ from deeptech.training.trainers import SupervisedTrainer
 from deeptech.training.losses import SparseCrossEntropyLossFromLogits
 from deeptech.training.optimizers import smart_optimizer
 from deeptech.core import Config, cli
-from torch.nn as nn
+import torch.nn as nn
 from torch.optim import SGD
 
 

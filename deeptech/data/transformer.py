@@ -3,10 +3,9 @@
 
 > A transformer converts the data from a general format into what the neural network needs.
 """
-from typing import Callable
 
 
-class Transformer(Callable):
+class Transformer():
     def __init__(self):
         """
         A transformer must implement `__call__`.

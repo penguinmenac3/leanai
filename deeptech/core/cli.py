@@ -14,11 +14,13 @@ from deeptech.core.checkpoint import init_model, load_weights
 from deeptech.core.definitions import SPLIT_TRAIN, SPLIT_VAL
 
 
-@inject_kwargs(results_path="training_results_path")
-def _setup_logging(name, results_path=None):
-    if name != "":
-        name = "_" + name
-    logging.set_logger(os.path.join(results_path, logging.get_timestamp() + name, "log.txt"))
+@inject_kwargs(results_path="training_results_path", prefix_time="training_name_prefix_time")
+def _setup_logging(name, results_path=None, prefix_time=None):
+    if prefix_time:
+        if name != "":
+            name = "_" + name
+        name = logging.get_timestamp() + name
+    logging.set_logger(os.path.join(results_path, name, "log.txt"))
 
 
 @inject_kwargs(epochs="training_epochs", name="training_name", create_dataset="data_dataset", create_model="model_model", create_loss="training_loss", create_optimizer="training_optimizer", create_trainer="training_trainer")
@@ -27,8 +29,12 @@ def _train(load_checkpoint, load_model, epochs=1, name=None, create_dataset=None
     The main training loop.
     """
     _setup_logging(name)
-    train_data = create_dataset(split=SPLIT_TRAIN).to_pytorch()
-    val_data = create_dataset(split=SPLIT_VAL).to_pytorch()
+    train_data = create_dataset(split=SPLIT_TRAIN)
+    if (hasattr(train_data, "to_pytorch")):
+        train_data = train_data.to_pytorch()
+    val_data = create_dataset(split=SPLIT_VAL)
+    if (hasattr(val_data, "to_pytorch")):
+        val_data = val_data.to_pytorch()
     model = create_model()
     init_model(model, train_data)
     if load_model is not None:
@@ -102,16 +108,20 @@ def run(config_class=None):
     """
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description='The main entry point for the script.')
-    parser.add_argument('--mode', type=str, required=True, help='What mode should be run, trian or test.')
+    parser.add_argument('--mode', type=str, required=False, default="train", help='What mode should be run, trian or test.')
     parser.add_argument('--input', type=str, required=True, help='Folder where the dataset can be found.')
-    parser.add_argument('--output', type=str, required=True, help='Folder where to save the results.')
+    if "RESULTS_PATH" in os.environ:
+        parser.add_argument('--output', type=str, required=False, default=os.environ["RESULTS_PATH"], help='Folder where to save the results defaults to $RESULTS_PATH.')
+    else:
+        parser.add_argument('--output', type=str, required=True, help='Folder where to save the results, you can set $RESULTS_PATH as a default.')
     if config_class is None:
         parser.add_argument('--config', type=str, required=True, help='Configuration to use.')
     parser.add_argument('--load_checkpoint', type=str, required=False, help='Path to the checkpoint (model, loss, optimizer, trainer state) to load.')
     parser.add_argument('--load_model', type=str, required=False, help='Path to the model weights to load.')
     parser.add_argument('--name', type=str, default="", required=False, help='Name to give the run.')
+    parser.add_argument('--no_time_prefix_name', action='store_true', help='This flag will disable the time prefix for the name.')
     parser.add_argument('--device', type=str, default=None, required=False, help='CUDA device id')
-    parser.add_argument('--debug', type=bool, default=False, required=False, help='If you are running with debug mode. This makes babilim verbose and print debug messages.')
+    parser.add_argument('--debug', action='store_true', help='This flag will make deeptech print debug messages.')
     args = parser.parse_args()
 
     if args.debug:
@@ -136,6 +146,8 @@ def run(config_class=None):
         config = import_config(args.config, args.name, args.input, args.output)
     else:
         config = config_class(args.name, args.input, args.output)
+    if args.no_time_prefix_name:
+        config.training_name_prefix_time = False
     run_manual(args.mode, config, args.load_checkpoint, args.load_model)
 
 

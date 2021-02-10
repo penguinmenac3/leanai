@@ -29,7 +29,7 @@ class COCOFasterRCNNConfig(Config):
         self.data_image_size = (800, 600)
 
         # Config of the model
-        self.model_categories = None  # Fill from dataset.
+        self.model_categories = []  # Fill from dataset.
         self.model_log_delta_preds = False
         self.model_model = lambda: Module.create("FasterRCNN", num_classes=len(self.model_categories), log_deltas=self.model_log_delta_preds)
 

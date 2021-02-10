@@ -3,3 +3,4 @@ imageio
 jstyleson
 torch
 torchvision
+GPUtil

@@ -1,9 +1,10 @@
-from typing import Sequence, Iterable, Iterator, Any
+from typing import Iterable, Iterator, Any
 import re
 import sys
 import traceback
 import torch
 from torch.utils.data import DataLoader as _DataLoader
+from torch.utils.data import IterableDataset as _IterableDataset
 from torch._six import container_abcs, string_classes, int_classes
 from deeptech.core.config import inject_kwargs
 
@@ -62,7 +63,7 @@ def _default_collate(batch):
 
 class BatchedPytorchDataset(Iterable):
     @inject_kwargs(shuffle="data_loader_shuffle", num_workers="data_loader_num_threads", device="data_device", collate_fn="data_collate_fn")
-    def __init__(self, dataset: Sequence, batch_size, shuffle: bool = True, num_workers: int = 0, device="auto", collate_fn=_default_collate):
+    def __init__(self, dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0, device="auto", collate_fn=_default_collate):
         """
         Converts a dataset into a pytorch dataloader.
 
@@ -79,8 +80,17 @@ class BatchedPytorchDataset(Iterable):
             else:
                 device = "cpu"
         self.device = device
-        self.native_dataloader = _DataLoader(dataset, batch_size=batch_size, shuffle=shuffle,
-                                             num_workers=num_workers, drop_last=True, pin_memory=True, collate_fn=collate_fn)
+        if isinstance(dataset, _IterableDataset):
+            shuffle = False
+        self.native_dataloader = _DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            drop_last=True,
+            pin_memory=True,
+            collate_fn=collate_fn
+        )
 
     def __iter__(self) -> Iterator:
         class TensorDataloaderIterator(Iterator):

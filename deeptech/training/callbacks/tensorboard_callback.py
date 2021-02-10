@@ -31,14 +31,15 @@ class TensorboardCallback(BaseCallback):
 
     def on_fit_start(self, model, train_dataloader, dev_dataloader, loss, optimizer, start_epoch: int, epochs: int) -> int:
         start_epoch = super().on_fit_start(model, train_dataloader, dev_dataloader, loss, optimizer, start_epoch, epochs)
-        if get_log_path() is None:
+        log_path = get_log_path()
+        if log_path is None:
             raise RuntimeError("You must setup logger before calling the fit method. See babilim.core.logging.set_logger")
         create_checkpoint_structure()
 
-        self.train_summary_writer = SummaryWriter(os.path.join(get_log_path(), "train"))
-        self.train_summary_txt = os.path.join(get_log_path(), "train", "log.txt")
-        self.dev_summary_writer = SummaryWriter(os.path.join(get_log_path(), "val"))
-        self.dev_summary_txt = os.path.join(get_log_path(), "val", "log.txt")
+        self.train_summary_writer = SummaryWriter(os.path.join(log_path, "train"))
+        self.train_summary_txt = os.path.join(log_path, "train", "log.txt")
+        self.dev_summary_writer = SummaryWriter(os.path.join(log_path, "val"))
+        self.dev_summary_txt = os.path.join(log_path, "val", "log.txt")
 
         try:
             self.train_summary_writer.add_graph(model, input_to_model=next(iter(train_dataloader))[0])
