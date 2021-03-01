@@ -4,3 +4,4 @@ jstyleson
 torch
 torchvision
 GPUtil
+psutil
