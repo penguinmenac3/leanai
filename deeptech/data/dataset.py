@@ -43,7 +43,7 @@ class Dataset(object):
         self._cache_dir = cache_dir
         if self._cache_dir is not None:
             self.init_caching(self._cache_dir)
-            self._cached_len = len(self._cache_indices)
+            self._find_cached_files()
         self.all_sample_tokens = []
         self.sample_tokens = None
         self.dataset_input_type = dataset_input_type
@@ -84,15 +84,34 @@ class Dataset(object):
         if not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir)
 
-        # Read all files in the folder into a dict that maps indices to filenames (for quicker access)
-        cache_files = os.listdir(self._cache_dir)
-        for cf in cache_files:
-            if cf.endswith(".pk"):
-                self._cache_indices[int(cf.replace(".pk", ""))] = os.path.join(self._cache_dir, cf)
+    def _find_cached_files(self):
+        self._cached_len = len(self._cache_indices)
+        if self._cache_dir is not None:
+            # Read all files in the folder into a dict that maps indices to filenames (for quicker access)
+            cache_files = os.listdir(self._cache_dir)
+            for cf in cache_files:
+                if cf.endswith(".pk") and cf.startswith(f"{self.split}_"):
+                    self._cache_indices[int(cf.replace(".pk", "").replace(f"{self.split}_", ""))] = os.path.join(self._cache_dir, cf)
 
-    def _cache(self, index: int, value: Any) -> None:
+    def _cache_file_path(self, index: int):
         assert self._cache_dir is not None
-        fp = os.path.join(self._cache_dir, "{:09d}.pk".format(index))
+        return os.path.join(self._cache_dir, f"{self.split}_{index:09d}.pk")
+
+    def _cache_exists(self, index: int) -> bool:
+        return os.path.exists(self._cache_file_path(index))
+
+    def _cached_sample(self, index: int):
+        if self._caching and self._cache_exists(index):
+            try:
+                with open(self._cache_file_path(index), "rb") as f:
+                    return pickle.load(f)
+            except EOFError:
+                return None
+        else:
+            return None
+
+    def _add_to_cache(self, index: int, value: Any) -> None:
+        fp = self._cache_file_path(index)
         with open(fp, "wb") as f:
             pickle.dump(value, f)
         self._cache_indices[index] = fp
@@ -129,29 +148,26 @@ class Dataset(object):
         if index >= len(self):
             raise IndexError()
 
-        if self._caching and index in self._cache_indices:
-            with open(self._cache_indices[index], "rb") as f:
-                sample = pickle.load(f)
-        else:
-            # Print index errors, they probably were an error and not intentional.
-            try:
+        # Print index errors, they probably were an error and not intentional.
+        try:
+            sample = self._cached_sample(index)
+            if sample is None:
                 sample_token = self.sample_tokens[index]
                 sample = self.getitem_by_sample_token(sample_token)
-            except IndexError as e:
-                traceback.print_exc(file=sys.stderr)
-                raise e
 
-            # Apply transforms if they are available.
-            for transform in self.transformers:
+                # Apply transforms if they are available.
+                for transform in self.transformers:
+                    sample = transform(*sample)
+
+                if self._caching:
+                    self._add_to_cache(index, sample)
+
+            # Apply real time transformers after caching. Realtime is not cached
+            for transform in self.realtime_transformers:
                 sample = transform(*sample)
-
-            if self._caching:
-                self._cache(index, sample)
-
-        # Apply real time transformers after caching. Realtime is not cached
-        for transform in self.realtime_transformers:
-            sample = transform(*sample)
-
+        except Exception as e:
+            traceback.print_exc(file=sys.stderr)
+            raise e
         return sample
 
     def __len__(self) -> int:
