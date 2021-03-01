@@ -241,6 +241,8 @@ def get_log_path() -> Union[str, None]:
     
     :return: The path containing the logfile.
     """
+    if __logfile is None:
+        return None
     return os.path.dirname(__logfile)
 
 
