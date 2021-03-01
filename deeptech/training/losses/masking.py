@@ -8,13 +8,12 @@ from torch.nn import Module
 
 
 class MaskedLoss(Module):
-    def __init__(self, loss, masking_fun, keep_dim=1):
+    def __init__(self, loss, keep_dim=1):
         """
         """
         super().__init__()
         self.wrapped_loss = loss
         self.keep_dim = keep_dim
-        self.masking_fun = masking_fun
 
     def forward(self, y_pred, y_true):
         """
@@ -54,16 +53,35 @@ class MaskedLoss(Module):
 
         return loss
 
+    def masking_fun(self, tensor):
+        raise RuntimeError("Must be implemented by subclass or set during runtime.")
+
 
 class NegMaskedLoss(MaskedLoss):
     def __init__(self, loss, keep_dim=1):
         """
         """
-        super().__init__(loss=loss, masking_fun=lambda x: (x >= 0), keep_dim=keep_dim)
+        super().__init__(loss=loss, keep_dim=keep_dim)
+    
+    def masking_fun(self, tensor):
+        return tensor >= 0
 
+
+class ValueMaskedLoss(MaskedLoss):
+    def __init__(self, loss, ignore_value, keep_dim=1):
+        """
+        """
+        super().__init__(loss=loss, keep_dim=keep_dim)
+        self.ignore_value = ignore_value
+
+    def masking_fun(self, tensor):
+        return tensor != self.ignore_value
 
 class NaNMaskedLoss(MaskedLoss):
     def __init__(self, loss, keep_dim=1):
         """
         """
-        super().__init__(loss=loss, masking_fun=lambda x: (~x.isnan()), keep_dim=keep_dim)
+        super().__init__(loss=loss, keep_dim=keep_dim)
+
+    def masking_fun(self, tensor):
+        return ~tensor.isnan()
