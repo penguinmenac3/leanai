@@ -49,6 +49,10 @@ class Dataset(object):
         self.dataset_input_type = dataset_input_type
         self.dataset_output_type = dataset_output_type
 
+    @staticmethod
+    def from_disk(cache_dir: str, split: str):
+        return Dataset(split, None, None, cache_dir)
+
     def __iter__(self):
         for idx in range(len(self)):
             yield self[idx]
@@ -92,6 +96,7 @@ class Dataset(object):
             for cf in cache_files:
                 if cf.endswith(".pk") and cf.startswith(f"{self.split}_"):
                     self._cache_indices[int(cf.replace(".pk", "").replace(f"{self.split}_", ""))] = os.path.join(self._cache_dir, cf)
+            self._cached_len = len(self._cache_indices.keys())
 
     def _cache_file_path(self, index: int):
         assert self._cache_dir is not None
