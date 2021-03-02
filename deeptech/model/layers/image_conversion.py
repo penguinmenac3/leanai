@@ -29,8 +29,8 @@ class ImageConversion(Module):
             mean = [0.485, 0.456, 0.406]
             std = [0.229, 0.224, 0.225]
             # Create tensors for a 0-255 value range image.
-            self.mean = torch.as_tensor([i * 255 for i in mean], dtype=image.dtype, device=image.device)
-            self.std = torch.as_tensor([j * 255 for j in std], dtype=image.dtype, device=image.device)
+            self.register_buffer("mean", torch.as_tensor([i * 255 for i in mean], dtype=image.dtype, device=image.device))
+            self.register_buffer("std", torch.as_tensor([j * 255 for j in std], dtype=image.dtype, device=image.device))
 
     def forward(self, image):
         image = image.float()
