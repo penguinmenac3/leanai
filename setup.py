@@ -2,13 +2,19 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '20210210'
+__version__ = '1.0'
 
 here = path.abspath(path.dirname(__file__))
+OFFICIAL_URL = "https://github.com/penguinmenac3/leanai"
+OFFICIAL_DOC_URL = f"{OFFICIAL_URL}/blob/main/"
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
+    parts = long_description.split("](")
+    for idx in range(1, len(parts)):
+        parts[idx] = OFFICIAL_DOC_URL + parts[idx]
+    long_description = "](".join(parts)
 
 # get the dependencies and installs
 with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
@@ -18,12 +24,12 @@ install_requires = [x.strip() for x in all_reqs if 'git+' not in x]
 dependency_links = [x.strip().replace('git+', '') for x in all_reqs if x.startswith('git+')]
 
 setup(
-    name='deeptech',
+    name='leanai',
     version=__version__,
     description='A library to help writing ai functions with ease.',
     long_description=long_description,
-    url='https://github.com/penguinmenac3/deeptech',
-    download_url='https://github.com/penguinmenac3/deeptech/tarball/' + __version__,
+    url=OFFICIAL_URL,
+    download_url=OFFICIAL_URL + '/tarball/' + __version__,
     license='MIT',
     long_description_content_type="text/markdown",
     classifiers=[
@@ -40,8 +46,8 @@ setup(
     author_email='mail@michaelfuerst.de',
     entry_points={
         'console_scripts': [
-            'deeptech = deeptech.core.cli:run',
-            'deeptech_tools = deeptech.core.cli_tools:main',
+            'leanai = leanai.core.cli_tools:main',
+            'leanai_remote = leanai.core.cli_remote:main',
         ]
     },
     extras_require={

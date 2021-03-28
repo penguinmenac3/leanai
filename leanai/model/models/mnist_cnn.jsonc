@@ -1,0 +1,23 @@
+{
+    "MNISTConvBlock_bn": {"type": "Sequential", "layers": [
+        {"type": "Conv2D", "filters": "spec:filters", "kernel_size": [3, 3]},
+        {"type": "Activation", "activation": "relu"},
+        {"type": "MaxPooling2D", "pool_size": [2, 2]},
+        {"type": "BatchNormalization"}
+    ]},
+    "MNISTFCBlock": {"type": "Sequential", "layers": [
+        {"type": "FullyConnected", "out_features": "spec:out_features"},
+        {"type": "Activation", "activation": "relu"}
+    ]},
+    "MNISTCNN": {"type": "Sequential", "layers": [
+        {"type": "ImageConversion", "standardize": false, "to_channel_first": true},
+        {"type": "MNISTConvBlock_bn", "filters": 12},
+        {"type": "MNISTConvBlock_bn", "filters": 18},
+        {"type": "MNISTConvBlock_bn", "filters": 18},
+        {"type": "MNISTConvBlock_bn", "filters": 18},
+        {"type": "Flatten"},
+        {"type": "MNISTFCBlock", "out_features": 18},
+        {"type": "Dense", "out_features": "spec:num_classes"},
+        {"type": "Activation", "activation": "softmax", "dim": 1, "disabled": "spec:logits"}
+    ]}
+}

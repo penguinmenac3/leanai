@@ -1,18 +1,18 @@
-# Deeptech
+# LeanAI
 
 > A library that helps with writing ai functions fast.
 
-It ships with a full [Documentation](docs/README.md) of its API and [Examples](deeptech/examples).
+It ships with a full [Documentation](docs/README.md) of its API and [Examples](leanai/examples).
 
 ## Getting Started
 
 Please make sure you have pytorch installed properly as a first step.
 
 ```bash
-pip install deeptech
+pip install leanai
 ```
 
-Then follow one of the [examples](deeptech/examples) or check out the [api documentation](docs/README.md).
+Then follow one of the [examples](leanai/examples) or check out the [api documentation](docs/README.md).
 
 ## Design Principles
 
@@ -29,11 +29,11 @@ Starting with tutorials and examples is usually easiest.
 
 Simple Fashion MNIST Examples:
 
-* [Fasion MNIST: Simple](deeptech/examples/mnist_simple.py)
-* [Fasion MNIST: Custom Model](deeptech/examples/mnist_custom_model.py)
-* [Fasion MNIST: Custom Loss](deeptech/examples/mnist_custom_loss.py)
-* **TODO** [Fasion MNIST: Custom Optimizer](deeptech/examples/mnist_custom_optimizer.py)
-* [Fasion MNIST: Custom Dataset](deeptech/examples/mnist_custom_dataset.py)
+* [Fasion MNIST: Simple](leanai/examples/mnist_simple.py)
+* [Fasion MNIST: Custom Model](leanai/examples/mnist_custom_model.py)
+* [Fasion MNIST: Custom Loss](leanai/examples/mnist_custom_loss.py)
+* **TODO** [Fasion MNIST: Custom Optimizer](leanai/examples/mnist_custom_optimizer.py)
+* [Fasion MNIST: Custom Dataset](leanai/examples/mnist_custom_dataset.py)
 
 
 ### Fashion MNIST
@@ -41,12 +41,12 @@ Simple Fashion MNIST Examples:
 Here is the simplest mnist example, it is so short it can be part of the main readme.
 
 ```python
-from deeptech.data.datasets import FashionMNISTDataset
-from deeptech.model.models import ImageClassifierSimple
-from deeptech.training.trainers import SupervisedTrainer
-from deeptech.training.losses import SparseCrossEntropyFromLogits
-from deeptech.training.optimizers import smart_optimizer
-from deeptech.core import Config, cli
+from leanai.data.datasets import FashionMNISTDataset
+from leanai.model.models import ImageClassifierSimple
+from leanai.training.trainers import SupervisedTrainer
+from leanai.training.losses import SparseCrossEntropyFromLogits
+from leanai.training.optimizers import smart_optimizer
+from leanai.core import Config, cli
 from torch.optim import SGD
 
 
@@ -71,7 +71,7 @@ class FashionMNISTConfig(Config):
 
 
 # Run with parameters parsed from commandline.
-# python -m deeptech.examples.mnist_simple --mode=train --input=Datasets --output=Results
+# python -m leanai.examples.mnist_simple --mode=train --input=Datasets --output=Results
 if __name__ == "__main__":
     cli.run(FashionMNISTConfig)
 ```
@@ -85,13 +85,8 @@ To contribute, please fork the repositroy on github, then clone your fork. Make 
 
 ## Origin of the Name
 
-The name is a tribute to the [deeptech:ai hackathon](https://pioniergarage.de/deeptechai-der-ai-hackathon-in-karlsruhe/).
-When writing the library for fast, accessible ai development, I remembered how helpfull such a library could have been for a hackathon.
-Thus, I decided to name it as a tribute to that hackathon.
-
-And besides, the name does not seem to be used for any company or library and sounds cool, at least to me.
-;)
-
+This library is the child of all previous libraries for deep learning I have created. However, this time I want to have a simple, easy and lean library.
+The goal is to encourage lean development, but also more literally, that the library tries to keep your code lean, as less code means less bugs.
 
 ## License
 

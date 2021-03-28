@@ -1,1 +1,0 @@
-from deeptech.training.optimizers._smart_optimizer import smart_optimizer

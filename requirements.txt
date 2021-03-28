@@ -5,3 +5,6 @@ torch
 torchvision
 GPUtil
 psutil
+pytorch-lightning
+opencv-contrib-python
+matplotlib
