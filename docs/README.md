@@ -1,93 +1,101 @@
 
 # Examples
 
+* [COCO using Faster RCNN
+](examples/coco_faster_rcnn.md)
 * [Fashion MNIST Simple
-](deeptech/examples/mnist_simple.md)
+](examples/mnist_simple.md)
 * [Fashion MNIST with custom dataset
-](deeptech/examples/mnist_custom_dataset.md)
+](examples/mnist_custom_dataset.md)
 * [Fashion MNIST with custom loss
-](deeptech/examples/mnist_custom_loss.md)
+](examples/mnist_custom_loss.md)
 * [Fashion MNIST with custom model
-](deeptech/examples/mnist_custom_model.md)
+](examples/mnist_custom_model.md)
 
 
 # Documentation
 
-* [deeptech.core.annotations
-](deeptech/core/annotations.md)
-* [deeptech.core.checkpoint
-](deeptech/core/checkpoint.md)
-* [deeptech.core.cli
-](deeptech/core/cli.md)
-* [deeptech.core.config
-](deeptech/core/config.md)
-* [deeptech.core.definitions
-](deeptech/core/definitions.md)
-* [deeptech.core.logging
-](deeptech/core/logging.md)
-* [deeptech.data.dataset
-](deeptech/data/dataset.md)
-* [deeptech.data.datasets.casia_faces_dataset
-](deeptech/data/datasets/casia_faces_dataset.md)
-* [deeptech.data.datasets.coco
-](deeptech/data/datasets/coco_dataset.md)
-* [deeptech.data.datasets.fashion_mnist_dataset
-](deeptech/data/datasets/fashion_mnist_dataset.md)
-* [deeptech.data.datasets.images_in_classfolders_dataset
-](deeptech/data/datasets/images_in_classfolders_dataset.md)
-* [deeptech.data.transformer
-](deeptech/data/transformer.md)
-* [deeptech.data.visualizations.plot_boxes
-](deeptech/data/visualizations/plot_boxes.md)
-* [deeptech.model.layers.activation
-](deeptech/model/layers/activation.md)
-* [deeptech.model.layers.batch_normalization
-](deeptech/model/layers/batch_normalization.md)
-* [deeptech.model.layers.convolution
-](deeptech/model/layers/convolution.md)
-* [deeptech.model.layers.dense
-](deeptech/model/layers/dense.md)
-* [deeptech.model.layers.flatten
-](deeptech/model/layers/flatten.md)
-* [deeptech.model.layers.image_conversion
-](deeptech/model/layers/image_conversion.md)
-* [deeptech.model.layers.pooling
-](deeptech/model/layers/pooling.md)
-* [deeptech.model.layers.reshape
-](deeptech/model/layers/reshape.md)
-* [deeptech.model.layers.roi_ops
-](deeptech/model/layers/roi_ops.md)
-* [deeptech.model.layers.selection
-](deeptech/model/layers/selection.md)
-* [deeptech.model.layers.sequential
-](deeptech/model/layers/sequential.md)
-* [deeptech.model.layers.tensor_combiners
-](deeptech/model/layers/tensor_combiners.md)
-* [deeptech.model.models.image_classifier_simple
-](deeptech/model/models/image_classifier_simple.md)
-* [deeptech.model.models.imagenet
-](deeptech/model/models/imagenet.md)
-* [deeptech.training.callbacks.base_callback
-](deeptech/training/callbacks/base_callback.md)
-* [deeptech.training.callbacks.checkpoint_callback
-](deeptech/training/callbacks/checkpoint_callback.md)
-* [deeptech.training.callbacks.log_callback
-](deeptech/training/callbacks/log_callback.md)
-* [deeptech.training.callbacks.tensorboard_callback
-](deeptech/training/callbacks/tensorboard_callback.md)
-* [deeptech.training.losses.classification
-](deeptech/training/losses/classification.md)
-* [deeptech.training.losses.masking
-](deeptech/training/losses/masking.md)
-* [deeptech.training.losses.regression
-](deeptech/training/losses/regression.md)
-* [deeptech.training.optimizers._smart_optimizer
-](deeptech/training/optimizers/_smart_optimizer.md)
-* [deeptech.training.tensorboard
-](deeptech/training/tensorboard.md)
-* [deeptech.training.trainers.base_trainer
-](deeptech/training/trainers/base_trainer.md)
-* [deeptech.training.trainers.supervised
-](deeptech/training/trainers/supervised.md)
+* [leanai.core.annotations
+](leanai/core/annotations.md)
+* [leanai.core.cli
+](leanai/core/cli.md)
+* [leanai.core.cli_tools
+](leanai/core/cli_tools.md)
+* [leanai.core.definitions
+](leanai/core/definitions.md)
+* [leanai.core.experiment_lightning
+](leanai/core/experiment.md)
+* [leanai.core.logging
+](leanai/core/logging.md)
+* [leanai.data.data_promise
+](leanai/data/data_promise.md)
+* [leanai.data.dataset
+](leanai/data/dataset.md)
+* [leanai.data.datasets.casia_faces_dataset
+](leanai/data/datasets/casia_faces_dataset.md)
+* [leanai.data.datasets.coco
+](leanai/data/datasets/coco_dataset.md)
+* [leanai.data.datasets.fashion_mnist_dataset
+](leanai/data/datasets/fashion_mnist_dataset.md)
+* [leanai.data.datasets.images_in_classfolders_dataset
+](leanai/data/datasets/images_in_classfolders_dataset.md)
+* [leanai.data.datasets.pickle_dataset
+](leanai/data/datasets/pickled_dataset.md)
+* [leanai.data.file_provider
+](leanai/data/file_provider.md)
+* [leanai.data.parser
+](leanai/data/parser.md)
+* [leanai.data.serializer
+](leanai/data/serializer.md)
+* [leanai.data.transformer
+](leanai/data/transformer.md)
+* [leanai.data.visualizations.plot_boxes
+](leanai/data/visualizations/plot_boxes.md)
+* [leanai.model.layers.activation
+](leanai/model/layers/activation.md)
+* [leanai.model.layers.batch_normalization
+](leanai/model/layers/batch_normalization.md)
+* [leanai.model.layers.box_tools
+](leanai/model/layers/detection.md)
+* [leanai.model.layers.convolution
+](leanai/model/layers/convolution.md)
+* [leanai.model.layers.dense
+](leanai/model/layers/dense.md)
+* [leanai.model.layers.flatten
+](leanai/model/layers/flatten.md)
+* [leanai.model.layers.image_conversion
+](leanai/model/layers/image_conversion.md)
+* [leanai.model.layers.pooling
+](leanai/model/layers/pooling.md)
+* [leanai.model.layers.reshape
+](leanai/model/layers/reshape.md)
+* [leanai.model.layers.roi_ops
+](leanai/model/layers/roi_ops.md)
+* [leanai.model.layers.selection
+](leanai/model/layers/selection.md)
+* [leanai.model.layers.sequential
+](leanai/model/layers/sequential.md)
+* [leanai.model.layers.tensor_combiners
+](leanai/model/layers/tensor_combiners.md)
+* [leanai.model.models.imagenet
+](leanai/model/models/imagenet.md)
+* [leanai.training.losses.classification
+](leanai/training/losses/classification.md)
+* [leanai.training.losses.detection
+](leanai/training/losses/detection.md)
+* [leanai.training.losses.loss
+](leanai/training/losses/loss.md)
+* [leanai.training.losses.masking
+](leanai/training/losses/masking.md)
+* [leanai.training.losses.multiloss
+](leanai/training/losses/multiloss.md)
+* [leanai.training.losses.regression
+](leanai/training/losses/regression.md)
+* [leanai.training.losses.sumloss
+](leanai/training/losses/sumloss.md)
+* [leanai_remote
+](leanai/core/cli_remote.md)
+* [pytorch_mjolnir.utils.tensorboard
+](leanai/core/tensorboard.md)
 
 
