@@ -11,7 +11,7 @@ from torch.optim import SGD, Optimizer
 
 from leanai.core.cli import run
 from leanai.core import Experiment
-from leanai.data.dataset import Dataset
+from leanai.data.dataset import SequenceDataset
 from leanai.data.datasets import FashionMNISTDataset
 from leanai.training.losses import SparseCrossEntropyLossFromLogits
 from leanai.model.module_from_json import Module
@@ -20,21 +20,24 @@ from leanai.model.module_from_json import Module
 class MNISTExperiment(Experiment):
     def __init__(
         self,
-        data_path: str = ".datasets/FashionMNIST",
         learning_rate=1e-3,
         batch_size=32,
         max_epochs=10,
+        cache_path="test_logs/FashionMNIST",
     ):
-        super().__init__(
-            model=Module.create("MNISTCNN", num_classes=10, logits=True),
-            loss=SparseCrossEntropyLossFromLogits()
-        )
+        super().__init__()
         self.save_hyperparameters()
+        self.model = Module.create("MNISTCNN", num_classes=10, logits=True),
+        self.loss = SparseCrossEntropyLossFromLogits()
         self.example_input_array = torch.zeros((batch_size, 28, 28, 1), dtype=torch.float32)
         self(self.example_input_array)
 
-    def get_dataset(self, split) -> Dataset:
-        return FashionMNISTDataset(split, self.hparams.data_path, download=True)
+    def prepare_dataset(self, split) -> None:
+        # Only called when cache path is set.
+        FashionMNISTDataset(split, self.hparams.cache_path, download=True)
+
+    def load_dataset(self, split) -> FashionMNISTDataset:
+        return FashionMNISTDataset(split, self.hparams.cache_path, download=False)
 
     def configure_optimizers(self) -> Optimizer:
         # Create an optimizer to your liking.
@@ -42,5 +45,5 @@ class MNISTExperiment(Experiment):
 
 
 if __name__ == "__main__":
-    # python examples/mnist_simple.py --data_path=$DATA_PATH/FashionMNIST --output=$RESULTS_PATH --name="MNIST" --version="Simple"
+    # python examples/mnist_simple.py --cache_path=$DATA_PATH/FashionMNIST --output=$RESULTS_PATH --name="MNIST" --version="Simple"
     run(MNISTExperiment)

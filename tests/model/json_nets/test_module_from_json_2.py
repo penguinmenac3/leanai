@@ -9,7 +9,7 @@ mfj.WARN_DISABLED_LAYERS = False
 
 class TestModuleFromJSON(unittest.TestCase):
     def setUp(self) -> None:
-        self.module = Module.create_from_file("tests/json_nets/vgg16_bn.jsonc", "VGG16_bn", logits=True)
+        self.module = Module.create_from_file("tests/model/json_nets/vgg16_bn.jsonc", "VGG16_bn", logits=True)
         self.input_data = torch.from_numpy(np.zeros((1, 128, 128, 3), dtype=np.float32))
         self.result = self.module(self.input_data)
 

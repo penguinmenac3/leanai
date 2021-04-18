@@ -35,11 +35,10 @@ class MNISTExperiment(Experiment):
         model_num_classes=81,
         model_log_delta_preds=False,
     ):
-        super().__init__(
-            model=Module.create("FasterRCNN", num_classes=model_num_classes, log_deltas=model_log_delta_preds),
-            loss=self.create_loss(model_log_delta_preds)
-        )
+        super().__init__()
         self.save_hyperparameters()
+        self.model = Module.create("FasterRCNN", num_classes=model_num_classes, log_deltas=model_log_delta_preds),
+        self.loss = self.create_loss(model_log_delta_preds)
         self.example_input_array = self.get_example_input_array()
         self(self.example_input_array)
 
