@@ -7,42 +7,25 @@ from typing import Any, NamedTuple, Tuple
 import numpy as np
 from torchvision.datasets import FashionMNIST
 from leanai.core.definitions import SPLIT_TRAIN
-from leanai.data.dataset import SequenceDataset
-from leanai.data.parser import IParser
-from leanai.data.file_provider import FileProviderSequence
+from leanai.data.dataset import SimpleDataset
 
 
 MNISTInputType = NamedTuple("MNISTInput", image=np.ndarray)
 MNISTOutputType = NamedTuple("MNISTOutput", class_id=np.ndarray)
 
 
-class FashionMNISTDataset(SequenceDataset):
-    def __init__(self, split: str, data_path: str = "", download=True, shuffle=True) -> None:
-        super().__init__(
-            file_provider_sequence=_FashionMNISTProvider(data_path, split, download, shuffle),
-            parser=_FashionMNISTParser()
-        )
-
-
-class _FashionMNISTProvider(FileProviderSequence):
-    def __init__(self, data_path, split, download, shuffle) -> None:
-        super().__init__(shuffle=shuffle)
+class FashionMNISTDataset(SimpleDataset):
+    def __init__(self, split: str, data_path: str = "", download=True) -> None:
+        super().__init__(MNISTInputType, MNISTOutputType)
         self.dataset = FashionMNIST(data_path, train=split == SPLIT_TRAIN, download=download)
-    
-    def __len__(self) -> int:
-        return len(self.dataset)
+        self.set_sample_tokens(range(len(self.dataset)))
 
-    def __getitem__(self, idx) -> Any:
-        return self.dataset[idx]
+    def parse_image(self, sample) -> np.ndarray:
+        image = np.array(self.dataset[sample][0], dtype="float32")
+        return np.reshape(image, (28, 28, 1))
 
-
-class _FashionMNISTParser(IParser):
-    def __call__(self, sample) -> Tuple[MNISTInputType, MNISTOutputType]:
-        image, label = sample
-        image = np.array(image, dtype="float32")
-        image = np.reshape(image, (28, 28, 1))
-        label = np.array([label], dtype="uint8")
-        return MNISTInputType(image), MNISTOutputType(label)
+    def parse_class_id(self, sample) -> np.ndarray:
+        return np.array([self.dataset[sample][1]], dtype="uint8")
 
 
 def test_visualization(data_path):

@@ -8,18 +8,19 @@ import numpy as np
 import os
 import cv2
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
+from leanai.data.dataset import SimpleDataset
 
 
 InputType = NamedTuple("Input", image=np.ndarray)
 OutputType = NamedTuple("Output", class_id=np.ndarray)
 
 
-class ImagesInClassfoldersDataset():
+class ImagesInClassfoldersDataset(SimpleDataset):
     def __init__(self, split: str, data_path, data_train_split=0.6, data_val_split=0.2, data_test_split=0.2) -> None:
-        super().__init__(split, InputType, OutputType)
+        super().__init__(InputType, OutputType)
         self.data_path = data_path
         self.classes = os.listdir(data_path)
-        self.all_sample_tokens = []
+        sample_tokens = []
 
         self.class_mapping = {}
         for idx, class_id in enumerate(self.classes):
@@ -39,13 +40,14 @@ class ImagesInClassfoldersDataset():
         for class_id in self.classes:
             image_names = os.listdir(os.path.join(data_path, class_id))
             image_names = [class_id + "/" + image_name for image_name in image_names]
-            self.all_sample_tokens.extend(image_names)
+            sample_tokens.extend(image_names)
+        self.set_sample_tokens(sample_tokens)
 
-    def get_image(self, sample_token):
+    def parse_image(self, sample_token):
         image = cv2.imread(os.path.join(self.data_path, sample_token))[:,:,::-1]
         return image
 
-    def get_class_id(self, sample_token):
+    def parse_class_id(self, sample_token):
         label = sample_token.split("/")[0]
         return label
 

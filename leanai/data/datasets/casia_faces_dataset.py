@@ -12,8 +12,8 @@ class CasiaFacesDataset(ImagesInClassfoldersDataset):
     def __init__(self, split) -> None:
         super().__init__(split)
 
-    def get_class_id(self, sample_token):
-        class_id = super().get_class_id(sample_token)
+    def parse_class_id(self, sample_token):
+        class_id = super().parse_class_id(sample_token)
         return np.array([self.class_mapping[class_id]], dtype=np.uint32)
 
 
