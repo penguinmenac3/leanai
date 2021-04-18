@@ -16,12 +16,18 @@ Then follow one of the [examples](leanai/examples) or check out the [api documen
 
 ## Design Principles
 
-The api builds on three core parts: Data, Model or Training. Some parts which are considered core functionality that is shared among them is in the core package.
-
+The api consists of 3+1 parts: Data, Model, Training and Core:
 * **Data** is concerned about loading and preprocessing the data for training, evaluation and deployment.
 * **Model** is concerned with implementing the model. Everything required for the forward pass of the model is here.
 * **Training** contains all required for training a model on data. This includes loss, metrics, optimizers and trainers.
-* *Core* contains functionality that is shared across model, data and training.
+* **Core** contains functionality that is shared across model, data and training.
+
+**Scientific Principles** in your work are encouraged and actively supported by the library.
+For scientific working, it is assumed, that your results are documented in a way, that peer reviewers can agree on the correctness of the results achieved.
+This includes two parts. Firstly, your results must be reproducible and secondly they need to be documented in a way that proves to reviewers, that you actually achieved these results.
+To facilitate this leanai creates a list of artifacts when running an experiment.
+The artifacts and their importance can be found in the [scientific_artifacts.md](scientific_artifacts.md).
+We argue, that you should store these artifacts even when not using leanai, to ensure reproducibility and proof that you conducted the experiment.
 
 ## Tutorials & Examples
 
@@ -41,39 +47,47 @@ Simple Fashion MNIST Examples:
 Here is the simplest mnist example, it is so short it can be part of the main readme.
 
 ```python
+import torch
+from torch.optim import SGD, Optimizer
+
+from leanai.core.cli import run
+from leanai.core import Experiment
+from leanai.data.dataset import SequenceDataset
 from leanai.data.datasets import FashionMNISTDataset
-from leanai.model.models import ImageClassifierSimple
-from leanai.training.trainers import SupervisedTrainer
-from leanai.training.losses import SparseCrossEntropyFromLogits
-from leanai.training.optimizers import smart_optimizer
-from leanai.core import Config, cli
-from torch.optim import SGD
+from leanai.training.losses import SparseCrossEntropyLossFromLogits
+from leanai.model.module_from_json import Module
 
 
-class FashionMNISTConfig(Config):
-    def __init__(self, training_name, data_path, training_results_path):
-        super().__init__(training_name, data_path, training_results_path)
-        # Config of the data
-        self.data_dataset = FashionMNISTDataset
+class MNISTExperiment(Experiment):
+    def __init__(
+        self,
+        learning_rate=1e-3,
+        batch_size=32,
+        max_epochs=10,
+        cache_path="cache/FashionMNIST",
+    ):
+        super().__init__()
+        self.save_hyperparameters()
+        self.model = Module.create("MNISTCNN", num_classes=10, logits=True),
+        self.loss = SparseCrossEntropyLossFromLogits()
+        self.example_input_array = torch.zeros((batch_size, 28, 28, 1), dtype=torch.float32)
+        self(self.example_input_array)
 
-        # Config of the model
-        self.model_model = ImageClassifierSimple
-        self.model_conv_layers = [32, 32, 32]
-        self.model_dense_layers = [100]
-        self.model_classes = 10
+    def prepare_dataset(self, split) -> None:
+        # Only called when cache path is set.
+        FashionMNISTDataset(split, self.hparams.cache_path, download=True)
 
-        # Config for training
-        self.training_loss = SparseCrossEntropyLossFromLogits
-        self.training_optimizer = smart_optimizer(SGD)
-        self.training_trainer = SupervisedTrainer
-        self.training_epochs = 10
-        self.training_batch_size = 32
+    def load_dataset(self, split) -> FashionMNISTDataset:
+        return FashionMNISTDataset(split, self.hparams.cache_path, download=False)
+
+    def configure_optimizers(self) -> Optimizer:
+        # Create an optimizer to your liking.
+        return SGD(self.parameters(), lr=self.hparams.learning_rate)
 
 
-# Run with parameters parsed from commandline.
-# python -m leanai.examples.mnist_simple --mode=train --input=Datasets --output=Results
 if __name__ == "__main__":
-    cli.run(FashionMNISTConfig)
+    # python examples/mnist_simple.py --cache_path=$DATA_PATH/FashionMNIST --output=$RESULTS_PATH --name="MNIST" --version="Simple"
+    run(MNISTExperiment)
 ```
 
 ## Contributing
