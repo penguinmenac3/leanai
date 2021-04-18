@@ -26,7 +26,7 @@ def _generate_version() -> str:
 
 
 class Experiment(pl.LightningModule):
-    def __init__(self, model: Module, loss: Module, meta_data_logging=True):
+    def __init__(self, model: Module=None, loss: Module=None, meta_data_logging=True):
         """
         An experiment base class.
 
@@ -79,7 +79,7 @@ class Experiment(pl.LightningModule):
             logger=TensorBoardLogger(
                 save_dir=output_path, version=version, name=name,
                 log_graph=hasattr(self, "example_input_array"),
-                default_hp_metric=False
+                #default_hp_metric=False
             ),
             resume_from_checkpoint=resume_checkpoint,
             accelerator="ddp" if gpus > 1 else None
@@ -192,6 +192,8 @@ class Experiment(pl.LightningModule):
         
         Arguments get passed unchanged.
         """
+        if self.model is None:
+            raise RuntimeError("You must either provide a model to the constructor or set self.model yourself.")
         return self.model(*args, **kwargs)
 
     def step(self, feature, target, batch_idx):
@@ -204,6 +206,8 @@ class Experiment(pl.LightningModule):
         :param target: A namedtuple from the dataloader that will be given to the loss.
         :return: The loss.
         """
+        if self.loss is None:
+            raise RuntimeError("You must either provide a loss to the constructor or set self.loss yourself.")
         prediction = self(*feature)
         loss = self.loss(prediction, target)
         if self.meta_data_logging:
