@@ -43,11 +43,11 @@ class ImagesInClassfoldersDataset(SimpleDataset):
             sample_tokens.extend(image_names)
         self.set_sample_tokens(sample_tokens)
 
-    def parse_image(self, sample_token):
+    def get_image(self, sample_token):
         image = cv2.imread(os.path.join(self.data_path, sample_token))[:,:,::-1]
         return image
 
-    def parse_class_id(self, sample_token):
+    def get_class_id(self, sample_token):
         label = sample_token.split("/")[0]
         return label
 

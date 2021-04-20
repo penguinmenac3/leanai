@@ -20,11 +20,11 @@ class FashionMNISTDataset(SimpleDataset):
         self.dataset = FashionMNIST(data_path, train=split == SPLIT_TRAIN, download=download)
         self.set_sample_tokens(range(len(self.dataset)))
 
-    def parse_image(self, sample) -> np.ndarray:
+    def get_image(self, sample) -> np.ndarray:
         image = np.array(self.dataset[sample][0], dtype="float32")
         return np.reshape(image, (28, 28, 1))
 
-    def parse_class_id(self, sample) -> np.ndarray:
+    def get_class_id(self, sample) -> np.ndarray:
         return np.array([self.dataset[sample][1]], dtype="uint8")
 
 
