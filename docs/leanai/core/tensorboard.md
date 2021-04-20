@@ -2,7 +2,7 @@
 
 
 
-# pytorch_mjolnir.utils.tensorboard
+# leanai.core.tensorboard
 
 > A logger for tensorboard which is used by the Experiment.
 

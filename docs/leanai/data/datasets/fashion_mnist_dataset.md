@@ -14,12 +14,12 @@
 *(no documentation found)*
 
 ---
-### *def* **parse_image**(*self*, sample) -> np.ndarray
+### *def* **get_image**(*self*, sample) -> np.ndarray
 
 *(no documentation found)*
 
 ---
-### *def* **parse_class_id**(*self*, sample) -> np.ndarray
+### *def* **get_class_id**(*self*, sample) -> np.ndarray
 
 *(no documentation found)*
 

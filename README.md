@@ -2,7 +2,7 @@
 
 > A library that helps with writing ai functions fast.
 
-It ships with a full [Documentation](docs/README.md) of its API and [Examples](leanai/examples).
+It ships with a full [Documentation](docs/README.md) of its API and [Examples](examples).
 
 ## Getting Started
 
@@ -12,7 +12,7 @@ Please make sure you have pytorch installed properly as a first step.
 pip install leanai
 ```
 
-Then follow one of the [examples](leanai/examples) or check out the [api documentation](docs/README.md).
+Then follow one of the [examples](examples) or check out the [api documentation](docs/README.md).
 
 ## Design Principles
 
@@ -33,16 +33,20 @@ We argue, that you should store these artifacts even when not using leanai, to e
 
 Starting with tutorials and examples is usually easiest.
 
-Simple Fashion MNIST Examples:
+Classification Examples:
 
-* [Fasion MNIST: Simple](leanai/examples/mnist_simple.py)
-* [Fasion MNIST: Custom Model](leanai/examples/mnist_custom_model.py)
-* [Fasion MNIST: Custom Loss](leanai/examples/mnist_custom_loss.py)
-* **TODO** [Fasion MNIST: Custom Optimizer](leanai/examples/mnist_custom_optimizer.py)
-* [Fasion MNIST: Custom Dataset](leanai/examples/mnist_custom_dataset.py)
+* [Fasion MNIST: Simple](examples/mnist_simple.py)
+* [Fasion MNIST: Custom Model](examples/mnist_custom_model.py)
+* [Fasion MNIST: Custom Loss](examples/mnist_custom_loss.py)
+* **TODO** [Fasion MNIST: Custom Optimizer](examples/mnist_custom_optimizer.py)
+* [Fasion MNIST: Custom Dataset](examples/mnist_custom_dataset.py)
+
+Object Detection Examples:
+
+* [MSCOCO: Faster RCNN](examples/coco_faster_rcnn.py)
 
 
-### Fashion MNIST
+### Fashion MNIST Classsification Example
 
 Here is the simplest mnist example, it is so short it can be part of the main readme.
 

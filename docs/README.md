@@ -27,6 +27,8 @@
 ](leanai/core/experiment.md)
 * [leanai.core.logging
 ](leanai/core/logging.md)
+* [leanai.core.tensorboard
+](leanai/core/tensorboard.md)
 * [leanai.data.data_promise
 ](leanai/data/data_promise.md)
 * [leanai.data.dataset
@@ -95,7 +97,5 @@
 ](leanai/training/losses/sumloss.md)
 * [leanai_remote
 ](leanai/core/cli_remote.md)
-* [pytorch_mjolnir.utils.tensorboard
-](leanai/core/tensorboard.md)
 
 

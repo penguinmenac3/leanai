@@ -14,12 +14,12 @@
 *(no documentation found)*
 
 ---
-### *def* **parse_image**(*self*, sample_token)
+### *def* **get_image**(*self*, sample_token)
 
 *(no documentation found)*
 
 ---
-### *def* **parse_class_id**(*self*, sample_token)
+### *def* **get_class_id**(*self*, sample_token)
 
 *(no documentation found)*
 

@@ -32,7 +32,7 @@ You should inherit it and then instantiate the inherited class.
 The Parser automatically only parses those examples which are used in the InputType and OutputType.
 Data which is not used in any of the two will not be parsed thus speeding up the parsing process.
 
-To achieve this, the parser tries to call functions called "parse_{attribute_name}",
+To achieve this, the parser tries to call functions called "parse_{attribute_name}" (and in case that fails "get_{attribute_name}"),
 where "attribute_name" is the field name in the named tuple.
 
 For example providing this named tuple:
