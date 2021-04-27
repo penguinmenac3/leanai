@@ -26,6 +26,28 @@ def _cleaned_spec(spec):
     return spec_light
 
 
+def get_val_from_spec(val, spec):
+    tokens = val.replace("spec:", "").split("=")
+    spec_name = tokens[0]
+    if spec_name in spec:
+        return spec[spec_name]
+    else:
+        if len(tokens) == 1:
+            return False
+        else:
+            if tokens[1] == "True" or tokens[1] == "true":
+                return True
+            elif tokens[1] == "False" or tokens[1] == "false":
+                return False
+            elif tokens[1].startswith("\"") or tokens[1].startswith("'"):
+                return tokens[1][1:-1]
+            else:
+                try:
+                    return float(tokens[1])
+                except:
+                    raise RuntimeError(f"Invalid value must be true, false, a number or a string (enclosed in quotation marks). Found: {tokens[1]}")
+
+
 class Module(nn.Module):
     @staticmethod
     def create(typename, _local_variables={}, **spec):
@@ -98,8 +120,16 @@ class Module(nn.Module):
         for idx, layer in enumerate(layers):
             layer = layer.copy()
             for key, val in layer.items():
-                if isinstance(val, str) and val.startswith("spec:"):
-                    layer[key] = self._spec[val.replace("spec:", "")]
+                # Allow or for bool operations
+                if isinstance(val, str) and val.startswith("spec:") and "|" in val:
+                    result = False
+                    for v in val.split("|"):
+                        result = result or get_val_from_spec(v, self._spec)
+                    layer[key] = result
+                # Use value directly if no or in value spec.
+                else:
+                    if isinstance(val, str) and val.startswith("spec:"):
+                        layer[key] = get_val_from_spec(val, self._spec)
             if "disabled" in layer and layer["disabled"]:
                 if WARN_DISABLED_LAYERS:
                     warn("Disabled Layer: {}".format(layer))
@@ -119,6 +149,10 @@ class Module(nn.Module):
         self.forward_impl()
         returns = self._collect_variables(self._returns, no_tuple_for_single_output=True)
         if self._return_type is not None:
+            if "allow_return_none" not in self._spec or not self._spec["allow_return_none"]:
+                for idx, ret in enumerate(returns):
+                    if ret is None:
+                        raise RuntimeError(f"None value at index {idx} in output of module. If this was intentional add the 'allow_return_none' to the spec.")
             returns = self._return_type(*returns)
         return returns
 
@@ -153,7 +187,14 @@ class Sequential(Module):
                     logging.debug(type(layer).__name__)
                     for inp in layer_args:
                         logging.debug(f"INPUT {list(inp.shape)}, {inp.min():.3f} <= inp <= {inp.max():.3f}")
-                result = layer(*layer_args)
+                try:
+                    result = layer(*layer_args)
+                    if "allow_return_none" not in layer._spec or not layer._spec["allow_return_none"]:
+                        for idx, ret in enumerate(result):
+                            if ret is None:
+                                raise RuntimeError(f"None value at index {idx} in output of module. If this was intentional add the 'allow_return_none' to the spec.")
+                except Exception as e:
+                    raise type(e)(f"{type(layer).__name__}: {e}") from e
                 if not isinstance(result, Sequence) or isinstance(result, Tensor):
                     result = [result]
                 if logging.DEBUG_VERBOSITY:

@@ -24,7 +24,7 @@ class TestModuleFromJSON(unittest.TestCase):
     def test_module_created_with_submodules(self):
         self.assertIsNotNone(self.module)
         self.assertIsInstance(self.module.submodules, list)
-        self.assertEquals(13, len(self.module.submodules))
+        self.assertEquals(15, len(self.module.submodules))
 
     def test_scoped_variables_inline_submodule(self):
         self.assertIsInstance(self.module._local_variables, dict)
