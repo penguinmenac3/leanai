@@ -24,7 +24,7 @@ class Stack(Module):
         super().__init__()
         self.axis = axis
         
-    def forward(self, tensor_list):
+    def forward(self, *tensor_list):
         return torch.stack(tensor_list, dim=self.axis)
 
 
@@ -44,5 +44,5 @@ class Concat(Module):
         super().__init__()
         self.axis = axis
         
-    def forward(self, tensor_list):
+    def forward(self, *tensor_list):
         return torch.cat(tensor_list, dim=self.axis)

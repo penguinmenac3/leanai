@@ -9,6 +9,7 @@ from torch.nn.functional import max_pool1d as _MaxPooling1D
 from torch.nn.functional import max_pool2d as _MaxPooling2D
 from torch.nn.functional import avg_pool1d as _AveragePooling1D
 from torch.nn.functional import avg_pool2d as _AveragePooling2D
+from torch.nn.modules.pooling import AdaptiveAvgPool2d as _AdaptiveAvgPool2d
 from leanai.model.layers.flatten import Flatten
 from leanai.model.module_registry import add_module
 
@@ -85,3 +86,16 @@ class GlobalAveragePooling2D(Module):
 
     def forward(self, features):
         return self.flatten(_AveragePooling2D(features, features.size()[2:]))
+
+
+@add_module()
+class AdaptiveAvgPool2D(Module):
+    def __init__(self, output_size):
+        """
+        Wraps AdaptiveAvgPool2d from pytorch
+        """
+        super().__init__()
+        self.pool = _AdaptiveAvgPool2d(output_size)
+
+    def forward(self, features):
+        return self.pool(features)
