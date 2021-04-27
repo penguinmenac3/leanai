@@ -16,9 +16,17 @@ from torch.nn import Module
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import IterableDataset
 from pytorch_lightning.utilities.cloud_io import load as pl_load
+from torchsummary import summary
+try:
+    from graphviz import Source
+    from torchviz import make_dot
+    GRAPHVIZ = True
+except:
+    GRAPHVIZ = False
 
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
+from leanai.core.logging import warn, info
 
 
 def _generate_version() -> str:
@@ -52,7 +60,7 @@ class Experiment(pl.LightningModule):
         self.loss = loss
         self.meta_data_logging = meta_data_logging
 
-    def run_train(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), resume_checkpoint=None):
+    def run_train(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None):
         """
         Run the experiment.
 
@@ -61,16 +69,27 @@ class Experiment(pl.LightningModule):
         :param nodes: The number of nodes used for training.
         :param version: The name for the specific run of the experiment in the family (defaults to a timestamp).
         :param output_path: The path where to store the outputs of the experiment (defaults to the current working directory).
-        :param resume_checkpoint: The path to the checkpoint that should be resumed (defaults to None).
+        :param checkpoint: The path to the checkpoint that should be resumed (defaults to None).
             In case of None this searches for a checkpoint in {output_path}/{name}/{version}/checkpoints and resumes it.
             Without defining a version this means no checkpoint can be found as there will not exist a  matching folder.
         """
         if version is None:
             version = _generate_version()
-        if resume_checkpoint is None:
-            resume_checkpoint = self._find_checkpoint(name, version, output_path)
         self.output_path = os.path.join(output_path, name, version)
-        self.testing = False
+        if checkpoint is None:
+            checkpoint = self._find_checkpoint(name, version, output_path)
+        elif not checkpoint.startswith("/"):
+            checkpoint = os.path.join(self.output_path, checkpoint)
+        self.testing = False    
+        if hasattr(self, "example_input_array") and self.example_input_array is not None:
+            outp = self(*self.transfer_batch_to_device(self.example_input_array))
+            if GRAPHVIZ:
+                graph = make_dot(outp, params=dict(self.named_parameters()))
+                Source(graph).render(os.path.join(self.output_path, "train_graph"))
+            try:
+                summary(self, [tuple(x.shape[1:]) for x in self.example_input_array], device=str(self.device))
+            except Exception as e:
+                warn(f"Failed to create full summary: {e}")
         trainer = pl.Trainer(
             default_root_dir=output_path,
             max_epochs=getattr(self.hparams, "max_epochs", 1000),
@@ -78,15 +97,15 @@ class Experiment(pl.LightningModule):
             num_nodes=nodes,
             logger=TensorBoardLogger(
                 save_dir=output_path, version=version, name=name,
-                log_graph=hasattr(self, "example_input_array"),
+                log_graph=hasattr(self, "example_input_array")  and self.example_input_array is not None,
                 #default_hp_metric=False
             ),
-            resume_from_checkpoint=resume_checkpoint,
+            resume_from_checkpoint=checkpoint,
             accelerator="ddp" if gpus > 1 else None
         )
         return trainer.fit(self)
 
-    def run_test(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), evaluate_checkpoint=None):
+    def run_test(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None):
         """
         Evaluate the experiment.
 
@@ -98,16 +117,14 @@ class Experiment(pl.LightningModule):
         :param evaluate_checkpoint: The path to the checkpoint that should be loaded (defaults to None).
         """
         if version is None:
-            version = _generate_version()
-        if evaluate_checkpoint is None:
-            raise RuntimeError("No checkpoint provided for evaluation, you must provide one.")
+            version = self._find_version(output_path, name)
         self.output_path = os.path.join(output_path, name, version)
-        if evaluate_checkpoint == "last":
-            checkpoint_path = self._find_checkpoint(name, version, output_path)
-        else:
-            checkpoint_path = os.path.join(self.output_path, evaluate_checkpoint)
-        if checkpoint_path is None or not os.path.exists(checkpoint_path):
-            raise RuntimeError(f"Checkpoint does not exist: {str(checkpoint_path)}")
+        if checkpoint is None:
+            checkpoint = self._find_checkpoint(name, version, output_path)
+        elif not checkpoint.startswith("/"):
+            checkpoint = os.path.join(self.output_path, checkpoint)
+        if checkpoint is None or not os.path.exists(checkpoint):
+            raise RuntimeError(f"Checkpoint does not exist: {str(checkpoint)}")
         self.testing = True
         trainer = pl.Trainer(
             default_root_dir=output_path,
@@ -116,12 +133,12 @@ class Experiment(pl.LightningModule):
             num_nodes=nodes,
             logger=TensorBoardLogger(
                 save_dir=output_path, version=version, name=name,
-                log_graph=hasattr(self, "example_input_array"),
+                log_graph=hasattr(self, "example_input_array") and self.example_input_array is not None,
                 default_hp_metric=False
             ),
             accelerator="ddp" if gpus > 1 else None
         )
-        ckpt = pl_load(checkpoint_path, map_location=lambda storage, loc: storage)
+        ckpt = pl_load(checkpoint, map_location=lambda storage, loc: storage)
         self.load_state_dict(ckpt['state_dict'])
         return trainer.test(self)
 
@@ -132,8 +149,18 @@ class Experiment(pl.LightningModule):
             checkpoints = sorted(os.listdir(checkpoint_folder))
             if len(checkpoints) > 0:
                 resume_checkpoint = os.path.join(checkpoint_folder, checkpoints[-1])
-                print(f"Using Checkpoint: {resume_checkpoint}")
+                info(f"Using Checkpoint: {resume_checkpoint}")
         return resume_checkpoint
+
+    def _find_version(self, output_path, name):
+        version = None
+        results = os.path.join(output_path, name)
+        if os.path.exists(results):
+            versions = sorted(os.listdir(results))
+            if len(versions) > 0:
+                version = os.path.join(results, versions[-1])
+                info(f"Using Version: {version}")
+        return version
 
     def prepare_dataset(self, split: str) -> None:
         """

@@ -8,3 +8,5 @@ psutil
 pytorch-lightning
 opencv-contrib-python
 matplotlib
+torchviz
+torchsummary

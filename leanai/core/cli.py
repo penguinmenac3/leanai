@@ -56,7 +56,7 @@ def run(experiment_class):
     parser.add_argument('--mode', type=str, required=False, default="train", help='The action that should be executed (in the config/experiment calls the function named like this).')
     parser.add_argument('--gpus', type=int, required=False, default=gpus, help='Number of GPUs that can be used.')
     parser.add_argument('--nodes', type=int, required=False, default=nodes, help='Number of nodes that can be used.')
-    parser.add_argument('--resume_checkpoint', type=str, required=False, default=None, help='A specific checkpoint to load. If not provided it tries to load latest if any exists.')
+    parser.add_argument('--checkpoint', type=str, required=False, default=None, help='A specific checkpoint to load. If not provided it tries to load latest if any exists.')
     parser.add_argument('--debug', action='store_true', help='This flag will make leanai print debug messages.')
     parser.add_argument('--device', type=str, default=None, required=False, help='CUDA device id if you want to use a specific one.')
     args, other_args = parser.parse_known_args()
@@ -73,7 +73,7 @@ def run(experiment_class):
         logging.info(f"Arg: --{k} {v}")
     for k, v in kwargs.items():
         logging.info(f"Arg: --{k} {v}")
-    _instantiate_and_run(experiment_class, name=args.name, version=args.version, output=args.output, resume_checkpoint=args.resume_checkpoint, gpus=args.gpus, nodes=args.nodes, **kwargs)
+    _instantiate_and_run(experiment_class, name=args.name, mode=args.mode, version=args.version, output=args.output, checkpoint=args.checkpoint, gpus=args.gpus, nodes=args.nodes, **kwargs)
 
 
 def _instantiate_and_run(
@@ -82,7 +82,7 @@ def _instantiate_and_run(
         mode: str = "train",
         version: str = None,
         output: str = "logs",
-        resume_checkpoint: str = None,
+        checkpoint: str = None,
         gpus: int = 1,
         nodes: int = 1,
         **kwargs
@@ -93,7 +93,7 @@ def _instantiate_and_run(
     if fun is None:
         raise NotImplementedError(f"No function run_{fun} in your experiment, but --mode='{fun}' requires that function to exist.")
     else:
-        return fun(name=name, version=version, output_path=output, resume_checkpoint=resume_checkpoint, gpus=gpus, nodes=nodes)
+        return fun(name=name, version=version, output_path=output, checkpoint=checkpoint, gpus=gpus, nodes=nodes)
 
 
 def _parse_other_args(other_args):
