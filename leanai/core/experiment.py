@@ -12,6 +12,7 @@ import GPUtil
 from typing import Any, Tuple
 from time import time
 from datetime import datetime
+from torch.functional import Tensor
 from torch.nn import Module
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import IterableDataset
@@ -82,12 +83,15 @@ class Experiment(pl.LightningModule):
             checkpoint = os.path.join(self.output_path, checkpoint)
         self.testing = False    
         if hasattr(self, "example_input_array") and self.example_input_array is not None:
-            outp = self(*self.transfer_batch_to_device(self.example_input_array))
+            example_input = self.example_input_array
+            if isinstance(example_input, Tensor):
+                example_input = (example_input,)
+            outp = self(*self.transfer_batch_to_device(example_input))
             if GRAPHVIZ:
                 graph = make_dot(outp, params=dict(self.named_parameters()))
                 Source(graph).render(os.path.join(self.output_path, "train_graph"))
             try:
-                summary(self, [tuple(x.shape[1:]) for x in self.example_input_array], device=str(self.device))
+                summary(self, [tuple(x.shape[1:]) for x in example_input], device=str(self.device))
             except Exception as e:
                 warn(f"Failed to create full summary: {e}")
         trainer = pl.Trainer(
