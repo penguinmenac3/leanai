@@ -61,8 +61,12 @@ class _RemoteRunner:
         with open(runfile, "w") as f:
             f.write(run_template.format(repository=repository, remote_results_path=remote_results_path, name=name, version=version, cmd=cmd, user=self.user))
 
-        _run(f"ssh {self.user}@{self.host} mkdir -p {remote_results_path}/{name}/{version}/src")
-        _run(f"cd {workspace} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | ssh {self.user}@{self.host} tar -xf - -C {remote_results_path}/{name}/{version}/src")
+        if self.host == "localhost":
+            _run(f"mkdir -p {remote_results_path}/{name}/{version}/src")
+            _run(f"cd {workspace} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | tar -xf - -C {remote_results_path}/{name}/{version}/src")
+        else:
+            _run(f"ssh {self.user}@{self.host} mkdir -p {remote_results_path}/{name}/{version}/src")
+            _run(f"cd {workspace} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | ssh {self.user}@{self.host} tar -xf - -C {remote_results_path}/{name}/{version}/src")
         
         if os.path.exists(slurmfile):
             os.remove(slurmfile)
@@ -70,13 +74,19 @@ class _RemoteRunner:
             os.remove(runfile)
 
         if self.slurm is not None:
-            _run(f"ssh {self.user}@{self.host} sbatch {remote_results_path}/{name}/{version}/src/{repository}/run.slurm")
+            if self.host == "localhost":
+                _run(f"sbatch {remote_results_path}/{name}/{version}/src/{repository}/run.slurm")
+            else:
+                _run(f"ssh {self.user}@{self.host} sbatch {remote_results_path}/{name}/{version}/src/{repository}/run.slurm")
             print("Waiting for output file...")
             while not os.path.exists(f"{remote_results_path}/{name}/{version}/out.txt"):
                 time.sleep(1)
             _run(f"tail -f {remote_results_path}/{name}/{version}/out.txt")
         else:
-            _run(f"ssh {self.user}@{self.host} screen -dmS '{version}' bash {remote_results_path}/{name}/{version}/src/{repository}/run.sh")
+            if self.host == "localhost":
+                _run(f"screen -dmS '{version}' bash {remote_results_path}/{name}/{version}/src/{repository}/run.sh")
+            else:
+                _run(f"ssh {self.user}@{self.host} screen -dmS '{version}' bash {remote_results_path}/{name}/{version}/src/{repository}/run.sh")
 
 
 def main():
