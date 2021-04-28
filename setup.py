@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 here = path.abspath(path.dirname(__file__))
 OFFICIAL_URL = "https://github.com/penguinmenac3/leanai"
