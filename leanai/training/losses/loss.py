@@ -4,6 +4,7 @@
 > An implementation of the multiloss.
 """
 from typing import Union
+from torch import Tensor
 from torch.nn import Module
 from leanai.core.experiment import Experiment
 
@@ -24,4 +25,6 @@ class Loss(Module):
         """
         Log a value to tensorboard.
         """
+        if isinstance(value, Tensor) and value.device != "cpu":
+            value = value.detach().cpu()
         self.__parent[0].log(name, value, **kwargs)
