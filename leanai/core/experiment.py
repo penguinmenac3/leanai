@@ -9,15 +9,13 @@ import os
 import pytorch_lightning as pl
 import psutil
 import GPUtil
-from typing import Any, Tuple
+from typing import Any, Callable, Optional, Tuple, Union
 from time import time
 from datetime import datetime
 from torch.functional import Tensor
 from torch.nn import Module
-from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import IterableDataset
 from pytorch_lightning.utilities.cloud_io import load as pl_load
-from torchsummary import summary
 try:
     from graphviz import Source
     from torchviz import make_dot
@@ -28,6 +26,7 @@ except:
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
 from leanai.core.logging import warn, info
+from leanai.data.dataloader import DataLoader
 
 
 def _generate_version() -> str:
@@ -88,12 +87,11 @@ class Experiment(pl.LightningModule):
                 example_input = (example_input,)
             outp = self(*self.transfer_batch_to_device(example_input))
             if GRAPHVIZ:
-                graph = make_dot(outp, params=dict(self.named_parameters()))
-                Source(graph).render(os.path.join(self.output_path, "train_graph"))
-            try:
-                summary(self, [tuple(x.shape[1:]) for x in example_input], device=str(self.device))
-            except Exception as e:
-                warn(f"Failed to create full summary: {e}")
+                try:
+                    graph = make_dot(outp, params=dict(self.named_parameters()))
+                    Source(graph).render(os.path.join(self.output_path, "train_graph"))
+                except Exception as e:
+                    warn(f"Failed to create graph visualization: {e}")
         trainer = pl.Trainer(
             default_root_dir=output_path,
             max_epochs=getattr(self.hparams, "max_epochs", 1000),
@@ -276,10 +274,7 @@ class Experiment(pl.LightningModule):
 
         The default implementation wraps self.val_data in a Dataloader.
         """
-        shuffle = True
-        if isinstance(self.val_data, IterableDataset):
-            shuffle = False
-        return DataLoader(self.val_data, batch_size=self.hparams.batch_size, shuffle=shuffle, num_workers=getattr(self.hparams, "num_workers", 0))
+        return DataLoader(self.val_data, batch_size=self.hparams.batch_size, shuffle=False, num_workers=getattr(self.hparams, "num_workers", 0))
 
     def log_resources(self, gpus_separately=False):
         """
