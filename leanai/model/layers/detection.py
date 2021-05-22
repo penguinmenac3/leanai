@@ -3,18 +3,21 @@
 
 > Convert the output of a layer into a box by using the anchor box.
 """
+from typing import List, Tuple
 import torch
 import math
 import numpy as np
+from torch import Tensor
 from torch.nn import Module
+from torchvision.ops import nms
 from leanai.core.annotations import RunOnlyOnce
 from leanai.model.module_registry import add_module
-from leanai.model.layers.convolution import Conv1D
+from leanai.model.layers.dense import Dense
 
 
 @add_module()
 class DetectionHead(Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes: int, dim: int = 2, num_anchors: int = 9):
         """
         A detection head module.
 
@@ -22,95 +25,63 @@ class DetectionHead(Module):
         """
         super().__init__()
         self.num_classes = num_classes
+        self.dim = dim
+        self.num_anchors = num_anchors
 
     @RunOnlyOnce
-    def build(self, features, anchors):
-        # assume shape of anchors = (batch, 4/6, num_anchors, N)
-        dim = self._get_dim(anchors)
-        num_anchors = self._get_num_anchors(anchors)
-        self.deltas = Conv1D(filters=num_anchors*dim*2, kernel_size=1)
+    def build(self, features):
+        self.deltas = Dense(self.num_anchors * self.dim * 2)
         if self.num_classes > 0:
-            self.classification = Conv1D(filters=num_anchors*self.num_classes, kernel_size=1)
-
-    def _get_dim(self, anchors):
-        return anchors.shape[1] // 2  # as there is position and size per dimension
-
-    def _get_num_anchors(self, anchors):
-        return anchors.shape[2]
-
-    def _normalize_inputs(self, features, anchors):
-        features_in_shape = features.shape
-        anchors_in_shape = anchors.shape
-        if len(features_in_shape) == 4: # BCHW
-            assert len(anchors.shape) == 5, "The shape of the anchors must be BCAHW matching the BCHW pattern of the features."
-            features = features.reshape(features_in_shape[0], features_in_shape[1], -1)
-            anchors = anchors.reshape(anchors_in_shape[0], anchors_in_shape[1], anchors_in_shape[2], -1)
-        elif len(features_in_shape) == 3: # BCN
-            assert len(anchors.shape) == 3, "The shape of the anchors must match the BCN pattern of the features."
-            anchors = anchors.reshape(anchors_in_shape[0], anchors_in_shape[1], 1, -1)
-        else:
-            raise RuntimeError("Box tensor has an incompatible shape: {}".format(features_in_shape))
-        assert len(features.shape) == 3
-        return features, anchors
+            self.classification = Dense(self.num_anchors * self.num_classes)
 
     def _forward_class_ids(self, features):
         class_ids = None
         if self.num_classes > 0:
             class_ids = self.classification(features)
-            class_ids = class_ids.reshape((class_ids.shape[0], self.num_classes, -1))
+            class_ids = class_ids.reshape((-1, self.num_classes))
         return class_ids
 
-    def _forward_boxes(self, features, anchors):
+    def _forward_boxes(self, features):
         deltas = self.deltas(features)
-        deltas = deltas.reshape((deltas.shape[0], self._get_dim(anchors)*2, -1))
+        deltas = deltas.reshape((-1, self.dim * 2))
         return deltas
+    
+    def _forward_batch_indices(self, batch_indices):
+        # TODO Test Correctness!
+        return torch.stack([batch_indices for _ in range(self.num_anchors)], dim=1).reshape((-1,))
 
-    def forward(self, features, anchors):
+    def forward(self, features, batch_indices):
         """
         Compute the detections given the features and anchors.
 
-        For shape definitions: B=Batchsize, C=#Channels, A=#Anchors, H=Height, W=Width, N=#Boxes.
-        Please note, that the shapes must be either of group (a) or of group (b) for all parameters.
+        For shapes:
+          * N is the number of input features,
+          * C is the channel depth of the input map,
+          * K is the number of classes,
+          * A is the number of anchors,
+          * D is the dimensionality of the boxes (2/3).
 
-        :param features: The feature tensor of shape (a) "BCHW" or (b) "BCN".
-        :param anchors: The anchor tensor of shape (a) "BCAHW" or (b) "BCN".
-        :returns: The predicted boxes of shape (a) "BC(AWH)" or (b) "BCN". Note how N = (AWH) in the output, resulting in len(shape) == 3 in both cases.
+        :param features: The feature tensor of shape (N,C).
+        :param batch_indices: A tensor containing the batch indices for the input features. Must have shape (N,).
+        :returns: A tuple of the boxes, class_ids and batch_indices of shape (N*A,2*D), (N*A,K), (N*A,).
         """
-        features, anchors = self._normalize_inputs(features, anchors)
-        self.build(features, anchors)
-        return self._forward_boxes(features, anchors), self._forward_class_ids(features)
-
-
-@add_module()
-class LogDeltasToBoxes(Module):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def forward(self, deltas, anchors):
-        dim = anchors.shape[1] // 2
-        anchor_pos = anchors[:, :dim]
-        anchor_size = anchors[:, dim:]
-        delta_pos = deltas[:, :dim]
-        delta_size = deltas[:, dim:]
-
-        pos = (delta_pos * anchor_size) + anchor_pos
-        size = torch.exp(delta_size) * anchor_size
-        boxes = torch.cat([pos, size], dim=1)
-        return boxes
+        self.build(features)
+        return self._forward_boxes(features), self._forward_class_ids(features), self._forward_batch_indices(batch_indices)
 
 
 @add_module()
 class DeltasToBoxes(Module):
-    def __init__(self, log_deltas=True) -> None:
+    def __init__(self, log_deltas=True, dimensionality=2) -> None:
         super().__init__()
         self.log_deltas = log_deltas
+        self.dim = dimensionality
 
+    @torch.no_grad()
     def forward(self, deltas, anchors):
-        dim = anchors.shape[1] // 2
-        anchor_pos = anchors[:, :dim]
-        anchor_size = anchors[:, dim:]
-        delta_pos = deltas[:, :dim]
-        delta_size = deltas[:, dim:]
+        anchor_pos = anchors[:, :self.dim]
+        anchor_size = anchors[:, self.dim:]
+        delta_pos = deltas[:, :self.dim]
+        delta_size = deltas[:, self.dim:]
 
         if not self.log_deltas:
             pos = delta_pos + anchor_pos
@@ -162,24 +133,26 @@ class GridAnchorGenerator(Module):
         width = self.width if self.width >= 0 else w_feat
         return height, width
 
-    def _build_anchors_from_shapes(self, anchor_shapes, size):
+    def _build_anchors_from_shapes(self, batch_size, anchor_shapes, size):
         num_anchors = len(anchor_shapes)
-        anchors = np.zeros((1, 4, num_anchors, size[0], size[1]), dtype=np.float32)
+        anchors = np.zeros((batch_size, 4, num_anchors, size[0], size[1]), dtype=np.float32)
         for anchor_idx in range(num_anchors):
             for y in range(size[0]):
                 for x in range(size[1]):
-                    anchors[0, 0, anchor_idx, y, x] = (x + 0.5) * self.feature_map_scale
-                    anchors[0, 1, anchor_idx, y, x] = (y + 0.5) * self.feature_map_scale
-                    anchors[0, 2:, anchor_idx, y, x] = anchor_shapes[anchor_idx]
+                    anchors[:, 0, anchor_idx, y, x] = (x + 0.5) * self.feature_map_scale
+                    anchors[:, 1, anchor_idx, y, x] = (y + 0.5) * self.feature_map_scale
+                    anchors[:, 2:, anchor_idx, y, x] = anchor_shapes[anchor_idx]
         return anchors
 
     @RunOnlyOnce
     def build(self, features):
+        batch_size = features.shape[0]
         anchor_shapes = self._build_anchor_shapes(features)
         size = self._get_anchor_grid_size(features)
-        anchors = self._build_anchors_from_shapes(anchor_shapes, size)
+        anchors = self._build_anchors_from_shapes(batch_size, anchor_shapes, size)
         self.register_buffer("anchors", torch.from_numpy(anchors).to(features.device))
 
+    @torch.no_grad()
     def forward(self, features):
         """
         Create the anchor grid as a tensor.
@@ -188,5 +161,73 @@ class GridAnchorGenerator(Module):
         :returns: A tensor representing the anchor grid of shape (1, 4, num_anchor_shapes, h_feat, w_feat).
         """
         self.build(features)
-        _,_,h_feat, w_feat = features.shape
-        return self.anchors[:, :, :, :h_feat, :w_feat].detach().contiguous()
+        return self.anchors
+
+
+@add_module()
+class ClipBox2DToImage(Module):
+    def __init__(self, image_size: Tuple[int, int]) -> None:
+        super().__init__()
+        assert len(image_size) == 2, "Assume image size to be of length 2."
+        self.image_size = image_size
+
+    @torch.no_grad()
+    def forward(self, boxes: Tensor) -> Tensor:
+        # To corners
+        dim = 2
+        pos = boxes[:, :dim]
+        size = boxes[:, dim:]
+        top_left = pos - size / 2
+        bottom_right = pos + size / 2
+        
+        # Clip
+        top_left = top_left.clamp(min=0)
+        bottom_right[:, 0] = bottom_right[:, 0].clamp(max=self.image_size[0])
+        bottom_right[:, 1] = bottom_right[:, 1].clamp(max=self.image_size[1])
+        
+        # To box
+        pos = (top_left + bottom_right) / 2
+        size = (bottom_right - top_left).clamp(min=0)
+        boxes = torch.cat([pos, size], dim=1)
+        return boxes
+
+
+@add_module()
+class FilterSmallBoxes2D(Module):
+    def __init__(self, min_size: List[float]) -> None:
+        super().__init__()
+        self.min_size = min_size
+    
+    @torch.no_grad()
+    def forward(self, boxes: Tensor, *others: List[Tensor]) -> Tensor:
+        size = boxes[:, 2:]
+        keep = torch.where((size[:, 0] > self.min_size[0]) & (size[:, 1] > self.min_size[1]))
+        results = [x[keep] for x in [boxes] + list(others)]
+        return tuple(results)
+
+
+@add_module()
+class FilterLowScores(Module):
+    def __init__(self, tresh, background_class_idx: int = 0) -> None:
+        super().__init__()
+        self.tresh = tresh
+        self.background_class_idx = background_class_idx
+
+    @torch.no_grad()
+    def forward(self, scores: Tensor, *others: List[Tensor]) -> Tensor:
+        foreground_scores = 1 - scores[:, self.background_class_idx]
+        keep = torch.where(foreground_scores > self.tresh)
+        results = [x[keep] for x in [scores] + list(others)]
+        return tuple(results)
+
+
+@add_module()
+class NMS(Module):
+    def __init__(self, tresh: float) -> None:
+        super().__init__()
+        self.tresh = tresh
+
+    def forward(self, boxes: Tensor, scores: Tensor, *others: List[Tensor]) -> Tensor:
+        keep = nms(roi, scores, self.tresh)
+        results = [x[keep] for x in [boxes, scores] + list(others)]
+        return tuple(results)

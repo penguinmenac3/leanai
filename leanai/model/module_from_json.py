@@ -64,22 +64,27 @@ class Module(nn.Module):
         if "typedef" not in spec:
             spec["typedef"] = typename
 
+        name = spec["typedef"]
+        if "name" in spec:
+            name = spec["name"]
+            del spec["name"]
+
         # If it is a composite module, create it.
         if typename in ["Sequential", "Paralell"]:
             args = spec["args"] if "args" in spec else ["input"]
             returns = spec["return"] if "return" in spec else [None]
             if typename == "Sequential":
                 module = Sequential(args, returns, spec["layers"], spec, _local_variables)
-                class _new_seq_class(Sequential):
-                    pass
-                _new_seq_class.__name__ = spec["typedef"]
-                module.__class__ = _new_seq_class
+                #class _new_seq_class(Sequential):
+                #    pass
+                #_new_seq_class.__name__ = spec["typedef"] + name
+                #module.__class__ = _new_seq_class
             else:
                 module = Paralell(args, returns, spec["layers"], spec, _local_variables)
-                class new_par_class(Paralell):
-                    pass
-                new_par_class.__name__ = spec["typedef"]
-                module.__class__ = new_par_class
+                #class new_par_class(Paralell):
+                #    pass
+                #new_par_class.__name__ = spec["typedef"] + name
+                #module.__class__ = new_par_class
         else:
             if typename in module_registry._native_module_library:
                 spec_light = spec.copy()
@@ -94,6 +99,7 @@ class Module(nn.Module):
         if isinstance(module._module_outputs, str):
             module._module_outputs = [module._module_outputs]
         module._spec = spec
+        module.__class__.__name__ = name
         return module
 
     @staticmethod
@@ -137,8 +143,6 @@ class Module(nn.Module):
             layer_type = layer["type"]
             del layer["type"]
             name = layer["name"] if "name" in layer else "layer_{}".format(idx)
-            if "name" in layer:
-                del layer["name"]
             module = Module.create(layer_type, _local_variables=_local_variables, **layer)
             self.submodules.append(module)
             self.add_module(name, module)
@@ -189,14 +193,17 @@ class Sequential(Module):
                         logging.debug(f"INPUT {list(inp.shape)}, {inp.min():.3f} <= inp <= {inp.max():.3f}")
                 try:
                     result = layer(*layer_args)
+                    if not isinstance(result, Sequence) or isinstance(result, Tensor):
+                        result = [result]
                     if "allow_return_none" not in layer._spec or not layer._spec["allow_return_none"]:
                         for idx, ret in enumerate(result):
                             if ret is None:
                                 raise RuntimeError(f"None value at index {idx} in output of module. If this was intentional add the 'allow_return_none' to the spec.")
                 except Exception as e:
-                    raise type(e)(f"{type(layer).__name__}: {e}") from e
-                if not isinstance(result, Sequence) or isinstance(result, Tensor):
-                    result = [result]
+                    args = list(e.args)
+                    args[0] = f"{args[0]} in {type(layer).__name__}"
+                    e.args = tuple(args)
+                    raise
                 if logging.DEBUG_VERBOSITY:
                     logging.debug(type(layer).__name__)
                     for inp in result:
