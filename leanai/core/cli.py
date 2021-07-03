@@ -22,7 +22,7 @@ def set_seeds():
     random.seed(0)
 
 
-def run(experiment_class):
+def run(experiment_class, args=None):
     """
     You can use this main function to make your experiment runnable with command line arguments.
 
@@ -30,7 +30,7 @@ def run(experiment_class):
 
     ```python
     if __name__ == "__main__":
-        from pytorch_mjolnir import run
+        from leanai.core.cli import run
         run(MyExperiment)
     ```
 
@@ -59,7 +59,7 @@ def run(experiment_class):
     parser.add_argument('--checkpoint', type=str, required=False, default=None, help='A specific checkpoint to load. If not provided it tries to load latest if any exists.')
     parser.add_argument('--debug', action='store_true', help='This flag will make leanai print debug messages.')
     parser.add_argument('--device', type=str, default=None, required=False, help='CUDA device id if you want to use a specific one.')
-    args, other_args = parser.parse_known_args()
+    args, other_args = parser.parse_known_args(args)
     kwargs = _parse_other_args(other_args)
 
     if args.debug:
@@ -88,7 +88,7 @@ def _instantiate_and_run(
         **kwargs
     ):
     set_seeds()
-    experiment = experiment_class(**kwargs)
+    experiment = experiment_class(mode=mode, **kwargs)
     fun = getattr(experiment, f"run_{mode}", None)
     if fun is None:
         raise NotImplementedError(f"No function run_{fun} in your experiment, but --mode='{fun}' requires that function to exist.")

@@ -34,7 +34,7 @@ def _generate_version() -> str:
 
 
 class Experiment(pl.LightningModule):
-    def __init__(self, model: Module=None, loss: Module=None, meta_data_logging=True):
+    def __init__(self, mode: str=None, model: Module=None, loss: Module=None, meta_data_logging=True):
         """
         An experiment base class.
 
@@ -128,6 +128,11 @@ class Experiment(pl.LightningModule):
         if checkpoint is None or not os.path.exists(checkpoint):
             raise RuntimeError(f"Checkpoint does not exist: {str(checkpoint)}")
         self.testing = True
+        if hasattr(self, "example_input_array") and self.example_input_array is not None:
+            example_input = self.example_input_array
+            if isinstance(example_input, Tensor):
+                example_input = (example_input,)
+            self(*self.transfer_batch_to_device(example_input))
         trainer = pl.Trainer(
             default_root_dir=output_path,
             max_epochs=getattr(self.hparams, "max_epochs", 1000),
