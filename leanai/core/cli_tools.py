@@ -56,7 +56,7 @@ def vscode_run_config(args):
     parser.add_argument('module', type=str, help="The name of the module that should be executed, e.g. 'leanai.core.cli'")
     args, run_args = parser.parse_known_args(args)
     if not os.path.exists(".vscode"):
-        os.mkdir(".vscode")
+        os.mkdir(".vscode")    
         print("Created .vscode folder.")
     if not os.path.exists(os.path.join(".vscode", "launch.json")):
         with open(os.path.join(".vscode", "launch.json"), "w") as f:
