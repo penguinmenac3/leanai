@@ -1,7 +1,7 @@
 import unittest
 from leanai.core.annotations import RunOnlyOnce
 
-class TestRunOnlyOnce(unittest.TestCase):
+class TestAnnotations(unittest.TestCase):
     def setUp(self) -> None:
         self.var = 0
 

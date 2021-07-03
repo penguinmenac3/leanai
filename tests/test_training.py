@@ -18,6 +18,7 @@ class MNISTExperiment(Experiment):
         batch_size=32,
         max_epochs=10,
         cache_path="test_logs/FashionMNIST",
+        mode="inference",
     ):
         super().__init__(
             model=Module.create("MNISTCNN", num_classes=10, logits=True),
@@ -39,7 +40,7 @@ class MNISTExperiment(Experiment):
         return SGD(self.parameters(), lr=self.hparams.learning_rate)
 
 
-class TestCLI(unittest.TestCase):
+class TestTraining(unittest.TestCase):
     def test_training_cli(self):
         result = _instantiate_and_run(MNISTExperiment, "TestTraining", output="test_logs")
         # TODO find out why result is allways 1 and not the final loss, figure out how to set that.
