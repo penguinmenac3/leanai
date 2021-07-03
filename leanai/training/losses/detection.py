@@ -171,8 +171,8 @@ class DetectionLoss(Loss):
             if self.fg_bg_sampler is not None:
                 fg, bg = self.fg_bg_sampler(fg, bg, best_indices)
 
-            gather_preds.append(torch.where(fg)[0])
-            gather_preds.append(torch.where(bg)[0])
+            gather_preds.append(torch.where(fg)[0] + anchors_start)
+            gather_preds.append(torch.where(bg)[0] + anchors_start)
 
             gather_targets.append(best_indices[fg] + targets_start)
             gather_targets.append(torch.zeros_like(torch.where(bg)[0]) - 1)    # for all bg insert -1

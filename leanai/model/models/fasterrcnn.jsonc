@@ -23,7 +23,7 @@ for models which have multiple outputs coming from various stages in the model.
         },
         {"type": "FasterRCNN_RPN", "image_size": "spec:image_size", "log_deltas": "spec:log_deltas",
             "in": "features",
-            "out": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "rpn_indices", "proposals", "proposal_indices"]
+            "out": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "rpn_boxes", "rpn_indices", "proposals", "proposal_indices"]
         },
         {"name": "InjectProposals", "type": "Concat", "axis": 0, 
             "in": ["proposals", "extra_proposals"],
@@ -37,7 +37,7 @@ for models which have multiple outputs coming from various stages in the model.
             "in": ["features", "final_anchors", "final_anchor_indices"],
             "out": ["final_deltas", "final_boxes", "final_class_ids", "final_indices"]
         }
-    ], "return": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "rpn_indices", "final_anchors", "final_anchor_indices", "final_deltas", "final_boxes", "final_class_ids", "final_indices"]},
+    ], "return": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "rpn_boxes", "rpn_indices", "final_anchors", "final_anchor_indices", "final_deltas", "final_boxes", "final_class_ids", "final_indices"]},
     "FasterRCNN_RPN": {"type": "Sequential", "args": ["features"], "layers": [
         {"type": "GridAnchorGenerator", "ratios": [0.5, 1, 2], "scales": [0.5, 1, 2], "feature_map_scale": 16,
             "in": "features",
@@ -63,7 +63,7 @@ for models which have multiple outputs coming from various stages in the model.
             "in": ["rpn_boxes", "rpn_class_ids", "rpn_indices"],
             "out": ["proposals", "proposal_scores", "proposal_indices"]
         }
-    ], "return": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "rpn_indices", "proposals", "proposal_indices"]},
+    ], "return": ["rpn_anchors", "rpn_deltas", "rpn_class_ids", "rpn_boxes", "rpn_indices", "proposals", "proposal_indices"]},
     "FasterRCNN_Head": {"type": "Sequential", "args": ["features", "proposals", "proposal_indices"], "layers": [
         {"type": "BoxToRoi", "feature_map_scale": 16, 
             "in": "proposals"
@@ -114,9 +114,10 @@ for models which have multiple outputs coming from various stages in the model.
         },
         // score > x
         {"type": "FilterLowScores", "tresh": 0.05,
-            "in": ["boxes", "scores", "indices"],
-            "out": ["boxes", "scores", "indices"]
+            "in": ["scores", "boxes", "indices"],
+            "out": ["scores", "boxes", "indices"]
         },
         // NMS (per class)
+        // TODO missing nms module
     ], "return": ["boxes", "scores", "indices"]}
 }

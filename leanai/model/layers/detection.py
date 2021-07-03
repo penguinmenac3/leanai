@@ -78,18 +78,18 @@ class DeltasToBoxes(Module):
 
     @torch.no_grad()
     def forward(self, deltas, anchors):
-        anchor_pos = anchors[:, :self.dim]
-        anchor_size = anchors[:, self.dim:]
-        delta_pos = deltas[:, :self.dim]
-        delta_size = deltas[:, self.dim:]
-
         if not self.log_deltas:
-            pos = delta_pos + anchor_pos
-            size = delta_size + anchor_size
-        else:
+            boxes = deltas + anchors
+        else:    
+            anchor_pos = anchors[:, :self.dim]
+            anchor_size = anchors[:, self.dim:]
+            delta_pos = deltas[:, :self.dim]
+            delta_size = deltas[:, self.dim:]
+            
             pos = (delta_pos * anchor_size) + anchor_pos
             size = torch.exp(delta_size) * anchor_size
-        boxes = torch.cat([pos, size], dim=1)
+            
+            boxes = torch.cat([pos, size], dim=1)
         return boxes
 
 
@@ -179,11 +179,12 @@ class ClipBox2DToImage(Module):
         size = boxes[:, dim:]
         top_left = pos - size / 2
         bottom_right = pos + size / 2
+        img_h, img_w = self.image_size
         
         # Clip
         top_left = top_left.clamp(min=0)
-        bottom_right[:, 0] = bottom_right[:, 0].clamp(max=self.image_size[0])
-        bottom_right[:, 1] = bottom_right[:, 1].clamp(max=self.image_size[1])
+        bottom_right[:, 0] = bottom_right[:, 0].clamp(max=img_w)
+        bottom_right[:, 1] = bottom_right[:, 1].clamp(max=img_h)
         
         # To box
         pos = (top_left + bottom_right) / 2
