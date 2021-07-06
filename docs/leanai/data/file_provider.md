@@ -13,8 +13,8 @@
 
 Provides file promises as an iterator.
 
-The next method returns Dict[str, DataPromise] which is a sample.
-Also implements iter and can optionally implement len.
+The next method returns `Dict[str, DataPromise]` which is a sample.
+Also implements `__iter__` and can optionally implement `__len__`.
 
 A subclass must implement `__next__`.
 
@@ -25,8 +25,8 @@ A subclass must implement `__next__`.
 
 Provides file promises as an sequence.
 
-The getitem and next method return Dict[str, DataPromise] which is a sample.
-Also implements iter and len.
+The getitem and next method return `Dict[str, DataPromise]` which is a sample.
+Also implements `__iter__` and `__len__`.
 
 A subclass must implement `__getitem__` and `__len__`.
 

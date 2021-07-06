@@ -16,7 +16,7 @@ Sets the seeds of torch, numpy and random for reproducability.
 
 
 ---
-### *def* **run**(experiment_class)
+### *def* **run**(experiment_class, args=None)
 
 You can use this main function to make your experiment runnable with command line arguments.
 
@@ -24,7 +24,7 @@ Simply add this to the end of your experiment.py file:
 
 ```python
 if __name__ == "__main__":
-from pytorch_mjolnir import run
+from leanai.core.cli import run
 run(MyExperiment)
 ```
 

@@ -34,6 +34,11 @@ Arguments:
 
 
 ---
+### *def* **build**(*self*, input_tensor, indices)
+
+*(no documentation found)*
+
+---
 ### *def* **forward**(*self*, input_tensor, indices)
 
 *(no documentation found)*
@@ -77,6 +82,30 @@ Parameters for the constructor:
 
 ---
 ### *def* **forward**(*self*, input_tensor, scores)
+
+*(no documentation found)*
+
+---
+---
+## *class* **GatherTopKIndicesOnIndexed**(Module)
+
+Returns the top k tensor indices (separate per batch).
+
+For shapes: B=#Batches, X=Arbitrary, C=#Classes, N=#Samples.
+
+Created object is callable with the following parameters:
+* **scores**: (Tensor[N, C]) The tensor in which to search the top k indices.
+* **batch_indices**: (Tensor[N,]) The tensor containing the indices in which each entry is in a batch. It is assumed to be monotonic rising.
+* **others**: (Tensor[N, *]) Other tensors that should be filtered using the indices from filtering the scores.
+* **returns**: A tuple of (filtered_scores, filtered_batch_indices, *filtered_others).
+
+Parameters for the constructor:
+* **k**: The number of indices to return per batch.
+* **background_class_idx**: (int) The index at which the background class is. (Default: 0)
+
+
+---
+### *def* **forward**(*self*, scores: Tensor, batch_indices: Tensor, *others: List[Tensor])
 
 *(no documentation found)*
 

@@ -22,6 +22,11 @@ A detection loss.
 
 
 ---
+### *def* **gather**(*self*, tensor, indices)
+
+*(no documentation found)*
+
+---
 ### *def* **build_insert_bg_and_ignore**(*self*, classes, boxes)
 
 *(no documentation found)*
@@ -41,7 +46,7 @@ Compute the detection loss.
 
 
 ---
-### *def* **compute_assignment**(*self*, anchors, targets)
+### *def* **compute_assignment**(*self*, anchors, anchor_indices, targets, target_indices)
 
 *(no documentation found)*
 

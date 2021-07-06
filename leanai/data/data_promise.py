@@ -2,10 +2,15 @@
 # leanai.data.data_promise
 
 > The promise object for data can be used to abstract how the data is loaded and only load it lazy.
+
 """
 
 
-class DataPromise:
+class DataPromise(object):
+    """
+    The interface for a datapromise can be used when data is expected, but the user
+    does not care if the data is loaded lazy or ahead of time.
+    """
     @property
     def data(self) -> bytes:
         """
@@ -27,6 +32,11 @@ class DataPromiseFromFile(DataPromise):
 
     @property
     def data(self) -> bytes:
+        """
+        Get the data as raw bytes.
+        
+        Lazy loads the data and buffers it for future access.
+        """
         if self._buffer is None:
             with open(self._filename, "rb") as f:
                 self._buffer = f.read()
@@ -44,4 +54,9 @@ class DataPromiseFromBytes(DataPromise):
 
     @property
     def data(self) -> bytes:
+        """
+        Get the data as raw bytes.
+        
+        Uses the bytes provided in the constructor.
+        """
         return self._bytes

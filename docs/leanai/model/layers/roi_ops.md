@@ -35,7 +35,7 @@ Parameters to RoiPool constructor:
 
 
 ---
-### *def* **forward**(*self*, features, rois)
+### *def* **forward**(*self*, features, rois, batch_indices)
 
 *(no documentation found)*
 
@@ -56,7 +56,7 @@ Parameters to RoiAlign constructor:
 
 
 ---
-### *def* **forward**(*self*, features, rois)
+### *def* **forward**(*self*, features, rois, batch_indices)
 
 *(no documentation found)*
 

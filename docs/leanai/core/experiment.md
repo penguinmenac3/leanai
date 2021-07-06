@@ -34,7 +34,7 @@ self.save_hyperparameters()
 
 
 ---
-### *def* **run_train**(*self*, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), resume_checkpoint=None)
+### *def* **run_train**(*self*, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None)
 
 Run the experiment.
 
@@ -43,13 +43,13 @@ Run the experiment.
 * **nodes**: The number of nodes used for training.
 * **version**: The name for the specific run of the experiment in the family (defaults to a timestamp).
 * **output_path**: The path where to store the outputs of the experiment (defaults to the current working directory).
-* **resume_checkpoint**: The path to the checkpoint that should be resumed (defaults to None).
+* **checkpoint**: The path to the checkpoint that should be resumed (defaults to None).
 In case of None this searches for a checkpoint in {output_path}/{name}/{version}/checkpoints and resumes it.
 Without defining a version this means no checkpoint can be found as there will not exist a  matching folder.
 
 
 ---
-### *def* **run_test**(*self*, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), evaluate_checkpoint=None)
+### *def* **run_test**(*self*, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None)
 
 Evaluate the experiment.
 

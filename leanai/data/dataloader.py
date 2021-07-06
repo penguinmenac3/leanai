@@ -1,3 +1,12 @@
+"""doc
+# leanai.data.dataloader
+
+> An extension to the pytorch datalaoder.
+
+This extended pytorch dataloader can take care of device placement and collating indexed tensors
+properly. Indexed tensors are used when you have batches with varying array sizes. This is a
+common case in object detection since the number of objects per frame is varying.
+"""
 from typing import Iterable, Iterator, Any
 import re
 import sys
@@ -14,6 +23,12 @@ np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 class IndexedArray(object):
     def __init__(self, data: np.ndarray):
+        """
+        Wrapper object around a numpy array, that tells the collate function, to handle
+        this as an indexed array during collation.
+        
+        This means arrays will be concatenated instead of stacked.
+        """
         if not isinstance(data, np.ndarray):
             raise RuntimeError("Wrong data type, only np.ndarrays can be wrapped.")
         self.data = data
@@ -21,6 +36,14 @@ class IndexedArray(object):
 
 class IndexArray(object):
     def __init__(self, data: np.ndarray):
+        """
+        Wrapper object around a numpy array, that tells the collate function, to handle
+        this as an index for an indexed array during collation.
+        
+        This means arrays will be concatenated instead of stacked and an offset of the batch_idx
+        will be added to this array. So if it contained zeros, it will contain the batch_idx
+        after collation.
+        """
         if not isinstance(data, np.ndarray):
             raise RuntimeError("Wrong data type, only np.ndarrays can be wrapped.")
         self.data = data
@@ -97,7 +120,8 @@ def _named_tuple_to_device(x, device):
 
 
 class DataLoader(Iterable):
-    def __init__(self, dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0, device=None, collate_fn=_default_collate):
+    def __init__(self, dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0, device = None, collate_fn = _default_collate):
+        """"""
         """
         Converts a dataset into a pytorch dataloader.
 
@@ -128,7 +152,7 @@ class DataLoader(Iterable):
         )
 
     def __iter__(self) -> Iterator:
-        class TensorDataloaderIterator(Iterator):
+        class _TensorDataloaderIterator(Iterator):
             def __init__(self, native_dataloader, device):
                 self.native_dataloader_iter = iter(native_dataloader)
                 self.device = device
@@ -144,7 +168,7 @@ class DataLoader(Iterable):
                 except IndexError as e:
                     traceback.print_exc(file=sys.stderr)
                     raise e
-        return TensorDataloaderIterator(self.native_dataloader, self.device)
+        return _TensorDataloaderIterator(self.native_dataloader, self.device)
 
     def __len__(self) -> int:
         return len(self.native_dataloader)

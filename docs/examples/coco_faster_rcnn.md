@@ -11,7 +11,7 @@ First we import everything, then we write the config, then we implement the loss
 
 ---
 ---
-## *class* **MNISTExperiment**(Experiment)
+## *class* **COCOFasterRCNNExperiment**(Experiment)
 
 *(no documentation found)*
 
@@ -21,17 +21,28 @@ First we import everything, then we write the config, then we implement the loss
 *(no documentation found)*
 
 ---
-### *def* **get_dataset**(*self*, split) -> Dataset
+### *def* **load_dataset**(*self*, split) -> SequenceDataset
 
 *(no documentation found)*
 
 ---
-### *def* **get_example_input_array**(*self*)
+### *def* **get_example_input_array**(*self*) -> FasterRCNNInput
 
 *(no documentation found)*
 
 ---
 ### *def* **configure_optimizers**(*self*) -> Optimizer
+
+*(no documentation found)*
+
+---
+---
+## *class* **FasterRCNNTransformer**(Transformer)
+
+*(no documentation found)*
+
+---
+### *def* **version**(*self*)
 
 *(no documentation found)*
 

@@ -31,6 +31,8 @@
 ](leanai/core/tensorboard.md)
 * [leanai.data.data_promise
 ](leanai/data/data_promise.md)
+* [leanai.data.dataloader
+](leanai/data/dataloader.md)
 * [leanai.data.dataset
 ](leanai/data/dataset.md)
 * [leanai.data.datasets.casia_faces_dataset
@@ -63,6 +65,8 @@
 ](leanai/model/layers/convolution.md)
 * [leanai.model.layers.dense
 ](leanai/model/layers/dense.md)
+* [leanai.model.layers.dropout
+](leanai/model/layers/dropout.md)
 * [leanai.model.layers.flatten
 ](leanai/model/layers/flatten.md)
 * [leanai.model.layers.image_conversion

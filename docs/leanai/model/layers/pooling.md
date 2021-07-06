@@ -71,3 +71,15 @@ This computes the global average in W, H dimension, so that the result is of sha
 
 *(no documentation found)*
 
+---
+---
+## *class* **AdaptiveAvgPool2D**(Module)
+
+Wraps AdaptiveAvgPool2d from pytorch
+
+
+---
+### *def* **forward**(*self*, features)
+
+*(no documentation found)*
+

@@ -22,7 +22,7 @@ Parameters of the constructor.
 
 
 ---
-### *def* **forward**(*self*, tensor_list)
+### *def* **forward**(*self*, *tensor_list)
 
 *(no documentation found)*
 
@@ -41,7 +41,7 @@ Parameters of the constructor.
 
 
 ---
-### *def* **forward**(*self*, tensor_list)
+### *def* **forward**(*self*, *tensor_list)
 
 *(no documentation found)*
 

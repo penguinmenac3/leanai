@@ -10,11 +10,11 @@ import numpy as np
 from .data_promise import DataPromise
 
 
-class IParser:
+class IParser(object):
     """
     Interface for a parser.
 
-    A parser must implement the __call__ method.
+    A parser must implement the `__call__` method.
     ```python
     def __call__(self, sample: Dict[str, DataPromise]) -> Any:
     ````

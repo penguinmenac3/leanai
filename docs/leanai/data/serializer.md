@@ -11,16 +11,15 @@ This is only an interface as a common standard and no implementation, as this va
 
 ---
 ---
-## *class* **ISerializer:*
+## *class* **ISerializer**(object)
 
 Interface for a serializer.
 
-A serializer must implement the __call__ method.
+A serializer must implement the `__call__` method.
 ```python
-def __call__(self, sample: Any) -> None:
+def __call__(self, sample_token: str, sample: Any) -> None:
 ````
 The call method gets a sample and has to write it to disk.
 The parameters for writing to disk should be specified in the constructor.
-The sample should contain all info required to write the correct filename (e.g. sample_token).
 
 

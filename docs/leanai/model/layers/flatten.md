@@ -18,7 +18,23 @@ This is usefull after the convolution layers before the dense layers. The (B, W,
 
 
 ---
-### *def* **forward**(*self*, features)
+### *def* **forward**(*self*, features: Tensor) -> Tensor
+
+*(no documentation found)*
+
+---
+---
+## *class* **VectorizeWithBatchIndices**(Module)
+
+*(no documentation found)*
+
+---
+### *def* **build**(*self*, tensor: Tensor)
+
+*(no documentation found)*
+
+---
+### *def* **forward**(*self*, tensor: Tensor) -> Tuple[Tensor, Tensor]
 
 *(no documentation found)*
 

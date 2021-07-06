@@ -7,11 +7,14 @@
 > The promise object for data can be used to abstract how the data is loaded and only load it lazy.
 
 
----
----
-## *class* **DataPromise:*
 
-*(no documentation found)*
+---
+---
+## *class* **DataPromise**(object)
+
+The interface for a datapromise can be used when data is expected, but the user
+does not care if the data is loaded lazy or ahead of time.
+
 
 ---
 ### *def* **data**(*self*) -> bytes
@@ -32,7 +35,10 @@ Only loads the data on access and buffers it then.
 ---
 ### *def* **data**(*self*) -> bytes
 
-*(no documentation found)*
+Get the data as raw bytes.
+
+Lazy loads the data and buffers it for future access.
+
 
 ---
 ---
@@ -46,5 +52,8 @@ Can be usefull when promising data from a tar stream.
 ---
 ### *def* **data**(*self*) -> bytes
 
-*(no documentation found)*
+Get the data as raw bytes.
+
+Uses the bytes provided in the constructor.
+
 
