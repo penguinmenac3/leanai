@@ -6,14 +6,15 @@
 from leanai.core.indexed_tensor_helpers import sliced_per_batch
 import torch
 import numpy as np
-from leanai.core import RunOnlyOnce, logging
+from leanai.core import logging
+from leanai.core.annotations import RunOnlyOnce
 from leanai.core.logging import debug
-from leanai.model.layers import Gather
 from leanai.training.losses.loss import Loss
 from leanai.training.losses.classification import SparseCrossEntropyLossFromLogits
 from leanai.training.losses.regression import SmoothL1Loss
 from leanai.training.losses.iou_box_2d import similarity_iou_2d
 from leanai.training.losses.masking import NaNMaskedLoss, NegMaskedLoss
+from leanai.training.loss_registry import build_loss, register_loss
 
 
 def _keep_n_random_trues(arr, num_keep):
@@ -31,13 +32,14 @@ def equal_number_sampler(fg, bg, best_indices):
     return fg, bg
 
 
+@register_loss()
 class DetectionLoss(Loss):
     def __init__(
         self, parent,
-        pred_anchors="pred_anchors",
-        pred_boxes="pred_boxes",
-        pred_class_ids="pred_class_ids",
-        pred_indices="pred_indices",
+        pred_anchors="anchors",
+        pred_boxes="raw_boxes",
+        pred_class_ids="raw_class_ids",
+        pred_indices="raw_indices",
         target_boxes="target_boxes",
         target_class_ids="target_class_ids",
         target_indices="target_indices",
@@ -46,14 +48,18 @@ class DetectionLoss(Loss):
         fg_bg_sampler=equal_number_sampler,
         similarity_metric=similarity_iou_2d,
         delta_preds=False,
-        log_delta_preds=False
+        log_delta_preds=False,
+        use_stage=-1,
+        class_loss=dict(type="NegMaskedLoss", loss=dict(type="SparseCrossEntropyLossFromLogits")),
+        center_loss=dict(type="NaNMaskedLoss", loss=dict(type="SmoothL1Loss")),
+        size_loss=dict(type="NaNMaskedLoss", loss=dict(type="SmoothL1Loss")),
     ):
         """
         A detection loss.
 
         :param anchors: The key of the anchors in the predictions.
         """
-        super().__init__(parent)
+        super().__init__(parent=parent)
         self.pred_anchors = pred_anchors
         self.pred_boxes = pred_boxes
         self.pred_class_ids = pred_class_ids
@@ -61,9 +67,9 @@ class DetectionLoss(Loss):
         self.target_boxes = target_boxes
         self.target_class_ids = target_class_ids
         self.target_indices = target_indices
-        self.class_loss = NegMaskedLoss(SparseCrossEntropyLossFromLogits())
-        self.center_loss = NaNMaskedLoss(SmoothL1Loss())
-        self.size_loss = NaNMaskedLoss(SmoothL1Loss())
+        self.class_loss = build_loss(class_loss)
+        self.center_loss = build_loss(center_loss)
+        self.size_loss = build_loss(size_loss)
         self.delta_preds = delta_preds
         self.log_delta_preds = log_delta_preds
 
@@ -71,6 +77,7 @@ class DetectionLoss(Loss):
         self.lower_tresh = lower_tresh
         self.upper_tresh = upper_tresh
         self.fg_bg_sampler = fg_bg_sampler
+        self.use_stage = use_stage
 
     def gather(self, tensor, indices):
         return torch.index_select(tensor, 0, indices)
@@ -99,6 +106,8 @@ class DetectionLoss(Loss):
         :param y_pred: The predictions of the network.
         :param y_true: The desired outputs of the network (labels).
         """
+        if self.use_stage >= 0:
+            y_pred = y_pred[self.use_stage]
         y_pred_dict = y_pred._asdict()
         y_true_dict = y_true._asdict()
         target_boxes = y_true_dict[self.target_boxes]
@@ -138,9 +147,13 @@ class DetectionLoss(Loss):
             center_loss = self.center_loss(pos, pos_gt)
             size_loss = self.size_loss(size, size_gt)
 
-        self.log("loss/class({}-{})".format(self.pred_class_ids, self.target_class_ids), class_loss)
-        self.log("loss/center({}-{})".format(self.pred_boxes, self.target_boxes), center_loss)
-        self.log("loss/size({}-{})".format(self.pred_boxes, self.target_boxes), size_loss)
+        if self.use_stage >= 0:
+            stage = str(self.use_stage) + "_"
+        else:
+            stage = ""
+        self.log("loss/{}class({}-{})".format(stage, self.pred_class_ids, self.target_class_ids), class_loss)
+        self.log("loss/{}center({}-{})".format(stage, self.pred_boxes, self.target_boxes), center_loss)
+        self.log("loss/{}size({}-{})".format(stage, self.pred_boxes, self.target_boxes), size_loss)
         return class_loss + center_loss + size_loss
 
     def compute_assignment(self, anchors, anchor_indices, targets, target_indices):

@@ -20,6 +20,9 @@ class Loss(Module):
         # put in array so it is invisible to pytorch,
         # otherwise pytorch functions have infinite recursion
         self.__parent = [parent]
+    
+    def set_parent(self, parent):
+        self.__parent[0] = parent
 
     def log(self, name, value, **kwargs):
         """

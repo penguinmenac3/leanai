@@ -7,8 +7,10 @@ import torch
 from torch.nn import Parameter
 from leanai.training.losses.loss import Loss
 from leanai.training.losses.sumloss import SumLoss
+from leanai.training.loss_registry import build_loss, register_loss
 
 
+@register_loss()
 class NormalizedLoss(Loss):
     def __init__(self, parent, loss, name = None, initial_sigma=1):
         """
@@ -19,8 +21,8 @@ class NormalizedLoss(Loss):
         :param name: The name under which to log the sigmas.
         :param initial_sigma: The initial sigma values.
         """
-        super().__init__(parent)
-        self._loss = loss
+        super().__init__(parent=parent)
+        self._loss = build_loss(loss, self)
         self.name = name
         self.sigma = Parameter(torch.tensor(initial_sigma, dtype=torch.float32, requires_grad=True), requires_grad=True)
 
@@ -39,6 +41,7 @@ class NormalizedLoss(Loss):
         return loss + torch.log(self.sigma**2 + 1)
 
 
+@register_loss()
 def MultiLossV2(parent, **losses) -> SumLoss:
     """
     Normalizes the losses by variance estimation and then sums them.
@@ -46,4 +49,4 @@ def MultiLossV2(parent, **losses) -> SumLoss:
     :param parent: The parent for the loss.
     :param **losses: Provide the losses you want to have fused as named parameters to the constructor. Losses get applied to y_pred and y_true, then logged to tensorboard and finally fused.
     """
-    return SumLoss(parent, **{k: NormalizedLoss(parent, v, name=k) for k, v in losses.items()})
+    return SumLoss(parent, **{k: NormalizedLoss(parent, build_loss(v, parent), name=k) for k, v in losses.items()})

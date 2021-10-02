@@ -3,14 +3,16 @@
 
 > All losses related to classification problems.
 """
-from torch.nn import Module
 from torch import Tensor
 from torch.nn import CrossEntropyLoss
 from torch.nn import BCEWithLogitsLoss
+from leanai.training.losses.loss import Loss
+from leanai.training.loss_registry import register_loss
 
 
-class SparseCrossEntropyLossFromLogits(Module):
-    def __init__(self, model=None, reduction: str = "mean"):
+@register_loss()
+class SparseCrossEntropyLossFromLogits(Loss):
+    def __init__(self, reduction: str = "mean", parent=None):
         """
         Compute a sparse cross entropy.
         
@@ -18,7 +20,7 @@ class SparseCrossEntropyLossFromLogits(Module):
         
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__()
+        super().__init__(parent=parent)
         self.loss_fun = CrossEntropyLoss(reduction=reduction)
         
     def forward(self, y_pred, y_true):
@@ -38,8 +40,9 @@ class SparseCrossEntropyLossFromLogits(Module):
         return self.loss_fun(y_pred, y_true)
 
 
-class BinaryCrossEntropyLossFromLogits(Module):
-    def __init__(self, model=None, reduction: str = "mean"):
+@register_loss()
+class BinaryCrossEntropyLossFromLogits(Loss):
+    def __init__(self, reduction: str = "mean", parent=None):
         """
         Compute a binary cross entropy.
         
@@ -47,7 +50,7 @@ class BinaryCrossEntropyLossFromLogits(Module):
 
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__()
+        super().__init__(parent=parent)
         self.loss_fun = BCEWithLogitsLoss(reduction=reduction)
 
     def forward(self, y_pred, y_true):
@@ -64,8 +67,9 @@ class BinaryCrossEntropyLossFromLogits(Module):
         return self.loss_fun(y_pred, y_true)
 
 
-class SparseCategoricalAccuracy(Module):
-    def __init__(self, model=None, reduction: str = "mean", axis=-1):
+@register_loss()
+class SparseCategoricalAccuracy(Loss):
+    def __init__(self, reduction: str = "mean", axis=-1, parent=None):
         """
         Compute the sparse mean squared error.
         
@@ -73,7 +77,7 @@ class SparseCategoricalAccuracy(Module):
         
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__()
+        super().__init__(parent=parent)
         self.reduction = reduction
         self.axis = axis
 
