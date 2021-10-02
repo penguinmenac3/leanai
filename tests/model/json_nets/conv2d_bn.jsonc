@@ -1,7 +1,0 @@
-{
-    "Conv2D_bn": {"type": "Sequential", "layers": [
-        {"type": "Conv2D", "filters": "spec:filters", "kernel_size": "spec:size"},
-        {"type": "Activation", "activation": "relu"},
-        {"type": "BatchNormalization"}
-    ]}
-}

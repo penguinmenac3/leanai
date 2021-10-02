@@ -5,10 +5,10 @@ import torch
 from torch.optim import SGD
 
 from leanai.core.cli import _instantiate_and_run
-from leanai.core import Experiment
+from leanai.core.experiment import Experiment
 from leanai.data.datasets import FashionMNISTDataset
-from leanai.training.losses import SparseCrossEntropyLossFromLogits
-from leanai.model.module_from_json import Module
+from leanai.model.configs.simple_classifier import buildSimpleClassifier
+from leanai.training.losses.classification import SparseCrossEntropyLossFromLogits
 
 
 class MNISTExperiment(Experiment):
@@ -18,14 +18,13 @@ class MNISTExperiment(Experiment):
         batch_size=32,
         max_epochs=10,
         cache_path="test_logs/FashionMNIST",
-        mode="inference",
+        mode="train",
     ):
-        super().__init__(
-            model=Module.create("MNISTCNN", num_classes=10, logits=True),
-            loss=SparseCrossEntropyLossFromLogits()
-        )
+        super().__init__()
         self.save_hyperparameters()
         self.example_input_array = torch.zeros((batch_size, 28, 28, 1), dtype=torch.float32)
+        self.model = buildSimpleClassifier(num_classes=10, logits=True),
+        self.loss = SparseCrossEntropyLossFromLogits()
         self(self.example_input_array)
 
     def prepare_dataset(self, split) -> None:

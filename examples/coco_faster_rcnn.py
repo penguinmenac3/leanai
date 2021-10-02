@@ -11,13 +11,13 @@ import numpy as np
 from torch.optim import SGD, Optimizer
 
 from leanai.core.cli import run
-from leanai.core import Experiment
+from leanai.core.experiment import Experiment
 from leanai.data.dataloader import IndexedArray, IndexArray
 from leanai.data.dataset import SequenceDataset
 from leanai.data.datasets import COCODataset
 from leanai.data.transformer import Transformer
-from leanai.model.module_from_json import Module
 from leanai.training.losses import SumLoss, DetectionLoss
+from leanai.model.configs import buildFasterRCNN
 
 
 DetectionInput = NamedTuple("DetectionInput", image=np.ndarray)
@@ -38,16 +38,11 @@ class COCOFasterRCNNExperiment(Experiment):
         max_epochs=10,
         model_num_classes=81,
         model_log_delta_preds=False,
+        mode="train",
     ):
         super().__init__()
         self.save_hyperparameters()
-        self.model = Module.create(
-            "FasterRCNN",
-            num_classes=model_num_classes,
-            log_deltas=model_log_delta_preds,
-            train=True,
-            image_size=(600, 800)
-        )
+        self.model = buildFasterRCNN(num_classes=model_num_classes, log_deltas=model_log_delta_preds)
         self.loss = self.create_loss(model_log_delta_preds)
         self.example_input_array = self.get_example_input_array()
 

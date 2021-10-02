@@ -13,11 +13,11 @@ from torchvision.datasets import FashionMNIST
 from collections import namedtuple
 
 from leanai.core.cli import run
-from leanai.core import Experiment
+from leanai.core.experiment import Experiment
 from leanai.core.definitions import SPLIT_TRAIN
 from leanai.data import SequenceDataset, FileProviderSequence, IParser
+from leanai.model.configs.simple_classifier import buildSimpleClassifier
 from leanai.training.losses import SparseCrossEntropyLossFromLogits
-from leanai.model.module_from_json import Module
 
 
 class MNISTExperiment(Experiment):
@@ -27,10 +27,11 @@ class MNISTExperiment(Experiment):
         batch_size=32,
         max_epochs=10,
         cache_path="test_logs/FashionMNIST",
+        mode="train",
     ):
         super().__init__()
         self.save_hyperparameters()
-        self.model = Module.create("MNISTCNN", num_classes=10, logits=True),
+        self.model = buildSimpleClassifier(num_classes=10, logits=True)
         self.loss = SparseCrossEntropyLossFromLogits()
         self.example_input_array = torch.zeros((batch_size, 28, 28, 1), dtype=torch.float32)
         self(self.example_input_array)
