@@ -3,6 +3,7 @@
 checkpoints
 .logs
 .datasets
+.leanai
 
 *.code-workspace
 .vs

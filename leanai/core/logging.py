@@ -158,6 +158,7 @@ def _log_code(output_dir: str, overwrite_existing=False) -> None:
     :param output_dir: The directory where to copy all code.
     :param overwrite_existing: When set to true it overwrites existing code copies.
     """
+    base_path = os.path.join(os.getcwd(), "..")
     def _get_backup_path(fname: str) -> str:
         return os.path.join(os.path.normpath(output_dir), fname)
 
@@ -166,17 +167,17 @@ def _log_code(output_dir: str, overwrite_existing=False) -> None:
         if not os.path.exists(path):
             os.makedirs(path)
 
-    def _backup(fname: str) -> None:
+    def _backup(fname: str, base_path: str) -> None:
         target = _get_backup_path(fname)
         _create_missing_dir(target)
-        shutil.copyfile(fname, target)
+        shutil.copyfile(os.path.join(base_path, fname), target)
 
     if overwrite_existing or not os.path.exists(output_dir):
-        for f in __get_all_files():
-            _backup(f)
+        for f in __get_all_files(base_path):
+            _backup(f, base_path)
 
 
-def set_logger(log_file: str) -> None:
+def set_logger(log_file: str, log_code: bool = True) -> None:
     """
     Setup the logger.
 
@@ -207,7 +208,8 @@ def set_logger(log_file: str) -> None:
     _flush_log_buffer()
     log_folder = get_log_path()
     assert log_folder is not None
-    _log_code(os.path.join(log_folder, "src_{}".format(get_timestamp())))
+    if log_code:
+        _log_code(os.path.join(log_folder, "src_{}".format(get_timestamp())))
     log_progress(goal="waiting", progress=0, score=0)
 
 

@@ -48,6 +48,7 @@ setup(
         'console_scripts': [
             'leanai = leanai.core.cli_tools:main',
             'leanai_remote = leanai.core.cli_remote:main',
+            'leanai_launch = leanai.core.cli_launcher:main',
         ]
     },
     extras_require={

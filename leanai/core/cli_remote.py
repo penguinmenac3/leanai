@@ -25,9 +25,10 @@ The `run.template.sh` is a file containing the actual code that should be run.
 It can contain `{remote_results_path}, {repository}, {name}, {version}, {cmd}, {user}` which will be replaced by the arguments provided when calling `leanai_remote`.
 """
 import os
+import json
 import time
 import argparse
-from leanai.core.experiment import _generate_version
+from leanai.core.logging import get_timestamp
 
 
 class _RemoteRunner:
@@ -40,7 +41,7 @@ class _RemoteRunner:
 
     def run(self, name, version_suffix, workspace, repository, remote_results_path, run_template, cmd, nodes, gpus, cpus):
         display_name = name
-        version = _generate_version()
+        version = get_timestamp()
         if version_suffix is not None:
             version = f"{version}_{version_suffix}"
             display_name = f"{name}_{version_suffix}"
@@ -51,23 +52,36 @@ class _RemoteRunner:
             if not self.dry_run:
                 os.system(cmd)
 
+        workspace_definition_file = os.path.join(workspace, repository, ".leanai/workspace.json")
+        if os.path.exists(workspace_definition_file):
+            with open(workspace_definition_file, "r") as f:
+                workspace_definition = json.loads(f.read())
+        else:
+            workspace_definition = {
+                "folders": [f for f in os.listdir(workspace) if os.path.isdir(os.path.join(workspace, f))]
+            }
+
         slurmfile = os.path.join(workspace, repository, "run.slurm")
         if self.slurm is not None:
-            with open(slurmfile, "w") as f:
+            with open(slurmfile, "w", newline="\n") as f:
                 cpu_mode = "--cpus-per-task" if gpus == 0 else "--cpus-per-gpu"
                 f.write(self.slurm_template.format(repository=repository, partition=self.slurm, remote_results_path=remote_results_path, name=name, version=version, user=self.user, display_name=display_name, nodes=nodes, gpus=gpus, cpus=cpus, cpu_mode=cpu_mode))
 
         runfile = os.path.join(workspace, repository, "run.sh")
-        with open(runfile, "w") as f:
+        with open(runfile, "w", newline="\n") as f:
             f.write(run_template.format(repository=repository, remote_results_path=remote_results_path, name=name, version=version, cmd=cmd, user=self.user))
 
         if self.host == "localhost":
             _run(f"mkdir -p {remote_results_path}/{name}/{version}/src")
-            _run(f"cd {workspace} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | tar -xf - -C {remote_results_path}/{name}/{version}/src")
+            for f in workspace_definition["folders"]:
+                _run(f"mkdir -p {remote_results_path}/{name}/{version}/src/{f}")
+                _run(f"cd {os.path.join(workspace, f)} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | tar -xf - -C {remote_results_path}/{name}/{version}/src/{f}")
         else:
             _run(f"ssh {self.user}@{self.host} mkdir -p {remote_results_path}/{name}/{version}/src")
-            _run(f"cd {workspace} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | ssh {self.user}@{self.host} tar -xf - -C {remote_results_path}/{name}/{version}/src")
-        
+            for f in workspace_definition["folders"]:
+                _run(f"ssh {self.user}@{self.host} mkdir -p {remote_results_path}/{name}/{version}/src/{f}")
+                _run(f"cd {os.path.join(workspace, f)} && tar --exclude=.git --exclude=__pycache__ --exclude=*.egg-info --exclude=docs --exclude=.vscode -cf - . | ssh {self.user}@{self.host} tar -xf - -C {remote_results_path}/{name}/{version}/src/{f}")
+
         if os.path.exists(slurmfile):
             os.remove(slurmfile)
         if os.path.exists(runfile):
@@ -78,15 +92,26 @@ class _RemoteRunner:
                 _run(f"sbatch {remote_results_path}/{name}/{version}/src/{repository}/run.slurm")
             else:
                 _run(f"ssh {self.user}@{self.host} sbatch {remote_results_path}/{name}/{version}/src/{repository}/run.slurm")
-            print("Waiting for output file...")
-            while not os.path.exists(f"{remote_results_path}/{name}/{version}/out.txt"):
-                time.sleep(1)
-            _run(f"tail -f {remote_results_path}/{name}/{version}/out.txt")
         else:
+            runfile = f"{remote_results_path}/{name}/{version}/src/{repository}/run.sh"
+            outpath = f"{remote_results_path}/{name}/{version}/out.txt"
+            command = f"bash -c 'bash {runfile} \"|\" tee {outpath}'"
             if self.host == "localhost":
-                _run(f"screen -dmS '{version}' bash {remote_results_path}/{name}/{version}/src/{repository}/run.sh")
+                _run(f"screen -dmS '{version}' {command}")
             else:
-                _run(f"ssh {self.user}@{self.host} screen -dmS '{version}' bash {remote_results_path}/{name}/{version}/src/{repository}/run.sh")
+                _run(f"ssh {self.user}@{self.host} screen -dmS '{version}' {command}")
+        try:
+            print("Showing outputs, exit with CTRL+C.")
+            while True:
+                if self.host == "localhost":
+                    _run(f"tail -c+1 -f {remote_results_path}/{name}/{version}/out.txt")
+                else:
+                    _run(f"ssh {self.user}@{self.host} tail -c+1 -f {remote_results_path}/{name}/{version}/out.txt")
+                print("Retry in 5 seconds...")
+                time.sleep(5)
+        except KeyboardInterrupt:
+            print("User closed connection via KeyboardInterrupt.")
+            pass
 
 
 def main():
@@ -99,16 +124,18 @@ def main():
     remote_results_path = None
     if "REMOTE_RESULTS_PATH" in os.environ:
         remote_results_path = os.environ["REMOTE_RESULTS_PATH"]
-    user = os.environ["USER"]
+    user = None
+    if "USER" in os.environ:
+        user = os.environ["USER"]
 
     parser = argparse.ArgumentParser(description='The main entry point for the script.')
     parser.add_argument('--name', type=str, required=True, help='The name for the experiment.')
     parser.add_argument('--version', type=str, required=False, default=None, help='A suffix that is added to the version if you want. Otherwise it will be just the date without suffix.')
     parser.add_argument('--cmd', type=str, required=False, default="python", help='The command to run.')
     parser.add_argument('--host', type=str, required=False, default=slurm_host, help='The hostname to connect to (e.g. "server.de"), defaults to $SLURM_HOST.')
-    parser.add_argument('--user', type=str, required=False, default=user, help='The username used, defaults to $USER.')
-    parser.add_argument('--slurm_template', type=str, required=False, default="run.template.slurm", help='The slurm template file.')
-    parser.add_argument('--run_template', type=str, required=False, default="run.template.sh", help='The run template file.')
+    parser.add_argument('--user', type=str, required=user is None, default=user, help='The username used, defaults to $USER.')
+    parser.add_argument('--slurm_template', type=str, required=False, default=".leanai/run.template.slurm", help='The slurm template file.')
+    parser.add_argument('--run_template', type=str, required=False, default=".leanai/run.template.sh", help='The run template file.')
     parser.add_argument('--repository', type=str, default=None, required=False, help='What package should be executed (defaults to cwd).')
     parser.add_argument('--workspace', type=str, default="..", required=False, help='Where the workspace with all git projects is. The entire workspace will be moved to the remote. (defaults to "..", parent directory).')
     parser.add_argument('--partition', type=str, required=False, default=default_partition, help='Select the partition on which to run the code.')
@@ -117,16 +144,23 @@ def main():
     parser.add_argument('--nodes', type=int, required=False, default=1, help='Select the number of nodes (Default: 1)')
     parser.add_argument('--gpus', type=int, required=False, default=1, help='Select the number of gpus (Default: 1)')
     parser.add_argument('--cpus', type=int, required=False, default=4, help='Select the number of cpus (Default: 4)')
+    parser.add_argument('--debug', type=int, required=False, default=0, help="Specify a port for the python debugger. Will run the cmd (if python) in debug mode, so that vscode can attach.")
     args, other_args = parser.parse_known_args()
 
     repository = args.repository
     if repository is None:
-        repository = os.getcwd().split("/")[-1]
+        repository = os.getcwd().replace("\\", "/").split("/")[-1]
 
     name = args.name
     version = args.version
 
-    cmd = f"{args.cmd} {' '.join(other_args)}"
+    if args.cmd == "python" and args.debug != 0:
+        print("Debug Port: {args.debug}")
+        cmd = f"python -m debugpy --listen 0.0.0.0:{args.debug} --wait-for-client"
+    else:
+        cmd = args.cmd
+
+    cmd = f"{cmd} {' '.join(other_args)}"
 
     slurm = None
     if args.host == slurm_host:
@@ -139,7 +173,7 @@ def main():
         with open(args.slurm_template, "r") as f:
             slurm_template = f.read()
 
-    remote_runner = _RemoteRunner(args.host, slurm_template, user, args.dry_run, slurm=slurm)
+    remote_runner = _RemoteRunner(args.host, slurm_template, args.user, args.dry_run, slurm=slurm)
     remote_runner.run(name, version, args.workspace, repository, args.remote_results_path, run_template, cmd, args.nodes, args.gpus, args.cpus)
 
 
