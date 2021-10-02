@@ -2,17 +2,17 @@
 
 
 
-# leanai.model.models.imagenet
+# leanai.model.models.backbones
 
-> An implemntation of various imagenet models.
+> An implemntation of various imagenet models which can be used as backbones.
 
 
 ---
 ---
-## *class* **ImagenetModel**(Module)
+## *class* **ImageNetBackbone**(Module)
 
 Create one of the iconic image net models in one line.
-Allows for only using the encoder part.
+Allows for only using the encoder part (default).
 
 This model assumes the input image to be 0-255 (8 bit integer) with 3 channels.
 
@@ -22,6 +22,7 @@ This model assumes the input image to be 0-255 (8 bit integer) with 3 channels.
 * **last_layer**: Index of the last layer in the encoder. Allows to cutoff encoder after a few layers.
 * **standardize**: (bool) If this is enabled the module will normalize a 0-255 uint image into a float32 image which is normalized and standardized, as with the magic values in pytorch. (Makes them compatible with the imagenet models.)
 * **to_channel_first**: (bool) It this is enabled, the image will be converted from h,w,c into the c,h,w format which pytorch uses.
+* **input_field_name**: (str) The name of the field in the input to use as an image, if the input is not a tensor (but a namedtuple).
 
 
 ---
@@ -30,7 +31,7 @@ This model assumes the input image to be 0-255 (8 bit integer) with 3 channels.
 *(no documentation found)*
 
 ---
-### *def* **forward**(*self*, image)
+### *def* **forward**(*self*, inputs)
 
 *(no documentation found)*
 

@@ -44,6 +44,7 @@ If that is not the case, your code may break somewhere.
 **Arguments**
 * **InputType**: A definition of a named tuple that defines the input of the neural network.
 * **OutputType**: A definition of a named tuple that defines the output of the neural network.
+* **ignore_file_not_found**: If a file is missing return None instead of an exception.  (Default: False).
 
 
 ---

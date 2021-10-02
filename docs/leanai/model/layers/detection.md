@@ -9,6 +9,64 @@
 
 ---
 ---
+## *class* **DenseDetectionHead**(Module)
+
+A detection head for dense detection (e.g. an RPN).
+
+Implements the interface: (inputs, features) -> DenseDetectionOutput.
+
+* **anchor_generator**: Generate an anchor grid (e.g GridAnchorGenerator).
+* **vectorize_anchors**: Vectorize the anchor grid into a linear tensor (e.g. VectorizeWithBatchIndices).
+* **vectorize_features**: Vectorize the features into a linear tensor (e.g. VectorizeWithBatchIndices).
+* **detection_head**: Apply a detection head on the features (e.g. DetectionHead).
+* **deltas_to_boxes**: The detection head returns deltas, these need to be converted to boxes (e.g. DeltasToBoxes).
+* **filter_preds**: (Optional) Filter the predicted boxes for further usage (e.g. FilterBoxes2D).
+
+
+---
+### *def* **forward**(*self*, inputs, features)
+
+*(no documentation found)*
+
+---
+---
+## *class* **ROIDetectionHead**(Module)
+
+A detection head for dense detection (e.g. an RPN).
+
+Implements the interface: (inputs, features) -> DenseDetectionOutput.
+
+* **box_to_roi**: Convert boxes into roi format that the roi op accepts (e.g. BoxToRoi)
+* **roi_op**: Apply a roi op to the features (e.g. RoiAlign).
+* **detection_head**: Apply a detection head on the features (e.g. DetectionHead).
+* **deltas_to_boxes**: The detection head returns deltas, these need to be converted to boxes (e.g. DeltasToBoxes).
+* **filter_preds**: (Optional) Filter the predicted boxes for further usage (e.g. FilterBoxes2D).
+* **inject_rois**: (Optional) The names for the attributes in the input used for injecting rois: dict(roi="name_in_input", roi_indices="name_in_input").
+
+
+---
+### *def* **forward**(*self*, inputs, features, detections)
+
+*(no documentation found)*
+
+---
+---
+## *class* **FilterBoxes2D**(Module)
+
+*(no documentation found)*
+
+---
+### *def* **build_clip**(*self*, inputs)
+
+*(no documentation found)*
+
+---
+### *def* **forward**(*self*, inputs, boxes, class_ids, indices)
+
+*(no documentation found)*
+
+---
+---
 ## *class* **DetectionHead**(Module)
 
 A detection head module.

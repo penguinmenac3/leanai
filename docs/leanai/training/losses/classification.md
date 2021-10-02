@@ -9,7 +9,7 @@
 
 ---
 ---
-## *class* **SparseCrossEntropyLossFromLogits**(Module)
+## *class* **SparseCrossEntropyLossFromLogits**(Loss)
 
 Compute a sparse cross entropy.
 
@@ -29,7 +29,7 @@ Compute the sparse cross entropy assuming y_pred to be logits.
 
 ---
 ---
-## *class* **BinaryCrossEntropyLossFromLogits**(Module)
+## *class* **BinaryCrossEntropyLossFromLogits**(Loss)
 
 Compute a binary cross entropy.
 
@@ -49,7 +49,7 @@ Compute the sparse cross entropy assuming y_pred to be logits.
 
 ---
 ---
-## *class* **SparseCategoricalAccuracy**(Module)
+## *class* **SparseCategoricalAccuracy**(Loss)
 
 Compute the sparse mean squared error.
 

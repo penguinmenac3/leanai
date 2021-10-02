@@ -137,7 +137,27 @@ The interface requires implementations for:
 
 ---
 ---
-## *class* **IterableDataset**(_CommonDataset, I**IterableDataset**)
+## *class* **CommonDataset**(object)
+
+A common base implementation from which all datasets inherit.
+
+
+---
+### *def* **preprocess**(*self*, sample: Any) -> Any
+
+Preprocesses samples.
+
+The default implementation simply applies the transformers in order.
+This function can be used for transforming the data representation as well as for data augmentation.
+You can even overwrite this function to implement your own preprocessing from scratch.
+
+* **sample**: A sample as provided by the parser (what your dataset returns if no preprocess or transformers are provided).
+* **returns**: A sample in the format as the algorithm needs it.
+
+
+---
+---
+## *class* **IterableDataset**(CommonDataset, I**IterableDataset**)
 
 An implementation of the IIterableDataset using fileprovider and parser.
 
@@ -154,7 +174,7 @@ parser or consider using and inheriting from the SimpleDataset.
 
 ---
 ---
-## *class* **SequenceDataset**(_CommonDataset, I**SequenceDataset**)
+## *class* **SequenceDataset**(CommonDataset, I**SequenceDataset**)
 
 An implementation of the ISequenceDataset using fileprovider and parser.
 
@@ -196,6 +216,7 @@ If that is not the case, your code may break somewhere.
 **Arguments**
 * **InputType**: A definition of a named tuple that defines the input of the neural network.
 * **OutputType**: A definition of a named tuple that defines the output of the neural network.
+* **ignore_file_not_found**: If a file is missing return None instead of an exception.  (Default: False).
 
 
 ---

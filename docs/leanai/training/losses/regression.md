@@ -9,7 +9,7 @@
 
 ---
 ---
-## *class* **SmoothL1Loss**(Module)
+## *class* **SmoothL1Loss**(Loss)
 
 Compute a smooth l1 loss.
 
@@ -27,7 +27,7 @@ Compute the smooth l1 loss.
 
 ---
 ---
-## *class* **MSELoss**(Module)
+## *class* **MSELoss**(Loss)
 
 Compute a mse loss.
 

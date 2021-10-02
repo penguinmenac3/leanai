@@ -17,6 +17,11 @@ Create a loss.
 
 
 ---
+### *def* **set_parent**(*self*, parent)
+
+*(no documentation found)*
+
+---
 ### *def* **log**(*self*, name, value, **kwargs)
 
 Log a value to tensorboard.

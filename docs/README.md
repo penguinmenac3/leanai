@@ -45,6 +45,8 @@
 ](leanai/data/datasets/images_in_classfolders_dataset.md)
 * [leanai.data.datasets.pickle_dataset
 ](leanai/data/datasets/pickled_dataset.md)
+* [leanai.data.datasets.webdataset
+](leanai/data/datasets/webdataset.md)
 * [leanai.data.file_provider
 ](leanai/data/file_provider.md)
 * [leanai.data.parser
@@ -83,8 +85,10 @@
 ](leanai/model/layers/sequential.md)
 * [leanai.model.layers.tensor_combiners
 ](leanai/model/layers/tensor_combiners.md)
-* [leanai.model.models.imagenet
-](leanai/model/models/imagenet.md)
+* [leanai.model.models.backbones
+](leanai/model/modules/backbones.md)
+* [leanai.model.models.detector
+](leanai/model/modules/detector.md)
 * [leanai.training.losses.classification
 ](leanai/training/losses/classification.md)
 * [leanai.training.losses.detection
@@ -99,6 +103,8 @@
 ](leanai/training/losses/regression.md)
 * [leanai.training.losses.sumloss
 ](leanai/training/losses/sumloss.md)
+* [leanai_launch
+](leanai/core/cli_launcher.md)
 * [leanai_remote
 ](leanai/core/cli_remote.md)
 

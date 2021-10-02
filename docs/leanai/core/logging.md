@@ -86,7 +86,7 @@ Uses the current timestamp the last_update and the difference between progresses
 
 
 ---
-### *def* **set_logger**(log_file: str) -> None
+### *def* **set_logger**(log_file: str, log_code: bool = True) -> None
 
 Setup the logger.
 

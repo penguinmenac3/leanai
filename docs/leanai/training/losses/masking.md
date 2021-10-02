@@ -9,7 +9,7 @@
 
 ---
 ---
-## *class* **MaskedLoss**(Module)
+## *class* **MaskedLoss**(Loss)
 
 *(no documentation found)*
 
