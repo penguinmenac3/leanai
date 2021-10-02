@@ -8,10 +8,10 @@ from torch.nn import Module
 from torch.nn import Conv1d as _Conv1d
 from typing import Optional, Any, Tuple
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import register_module
 
 
-@add_module()
+@register_module()
 class Conv1D(Module):
     def __init__(self, filters: int, kernel_size: int, padding: Optional[str] = None, stride: int = 1, dilation_rate: int = 1, kernel_initializer: Optional[Any] = None, activation=None):
         """
@@ -59,7 +59,7 @@ class Conv1D(Module):
         return result
 
 
-@add_module()
+@register_module()
 class Conv2D(Module):
     def __init__(self, filters: int, kernel_size: Tuple[int, int], padding: Optional[str] = None, strides: Tuple[int, int] = (1, 1), dilation_rate: Tuple[int, int] = (1, 1), kernel_initializer: Optional[Any] = None, activation=None):
         """

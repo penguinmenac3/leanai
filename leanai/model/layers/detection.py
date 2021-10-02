@@ -4,6 +4,7 @@
 > Convert the output of a layer into a box by using the anchor box.
 """
 from typing import List, Tuple
+from collections import namedtuple
 import torch
 import math
 import numpy as np
@@ -11,11 +12,147 @@ from torch import Tensor
 from torch.nn import Module
 from torchvision.ops import nms
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import build_module, register_module
+from leanai.model.layers.selection import GatherTopKIndicesOnIndexed
 from leanai.model.layers.dense import Dense
 
 
-@add_module()
+DetectionOutput = namedtuple("DetectionOutput", [
+    "anchors", "raw_deltas", "raw_class_ids", "raw_boxes", "raw_indices",
+    "boxes", "class_ids", "indices"
+])
+
+
+@register_module()
+class DenseDetectionHead(Module):
+    def __init__(self, anchor_generator, vectorize_anchors, vectorize_features, detection_head, deltas_to_boxes, filter_preds=None):
+        """
+        A detection head for dense detection (e.g. an RPN).
+
+        Implements the interface: (inputs, features) -> DenseDetectionOutput.
+
+        :param anchor_generator: Generate an anchor grid (e.g GridAnchorGenerator).
+        :param vectorize_anchors: Vectorize the anchor grid into a linear tensor (e.g. VectorizeWithBatchIndices).
+        :param vectorize_features: Vectorize the features into a linear tensor (e.g. VectorizeWithBatchIndices).
+        :param detection_head: Apply a detection head on the features (e.g. DetectionHead).
+        :param deltas_to_boxes: The detection head returns deltas, these need to be converted to boxes (e.g. DeltasToBoxes).
+        :param filter_preds: (Optional) Filter the predicted boxes for further usage (e.g. FilterBoxes2D).
+        """
+        super().__init__()
+        self.anchor_generator = build_module(anchor_generator)
+        self.vectorize_anchors = build_module(vectorize_anchors)
+        self.vectorize_features = build_module(vectorize_features)
+        self.detection_head = build_module(detection_head)
+        self.deltas_to_boxes = build_module(deltas_to_boxes)
+        self.filter_preds = build_module(filter_preds) if filter_preds is not None else None
+
+    def forward(self, inputs, features):
+        anchors = self.anchor_generator(features)
+        anchors, raw_indices = self.vectorize_anchors(anchors)
+        features, raw_indices = self.vectorize_features(features)
+        raw_deltas, raw_class_ids, raw_indices = self.detection_head(features, raw_indices)
+        raw_boxes = self.deltas_to_boxes(raw_deltas, anchors)
+        if self.filter_preds is not None:
+            boxes, class_ids, indices = self.filter_preds(inputs, raw_boxes, raw_class_ids, raw_indices)
+        else:
+            boxes, class_ids, indices = raw_boxes, raw_class_ids, raw_indices
+        return DetectionOutput(
+            anchors=anchors, raw_deltas=raw_deltas, raw_class_ids=raw_class_ids, raw_boxes=raw_boxes, raw_indices=raw_indices,
+            boxes=boxes, class_ids=class_ids, indices=indices
+        )
+
+
+@register_module()
+class ROIDetectionHead(Module):
+    def __init__(self, box_to_roi, roi_op, detection_head, deltas_to_boxes, filter_preds=None, inject_rois=None):
+        """
+        A detection head for dense detection (e.g. an RPN).
+
+        Implements the interface: (inputs, features) -> DenseDetectionOutput.
+
+        :param box_to_roi: Convert boxes into roi format that the roi op accepts (e.g. BoxToRoi)
+        :param roi_op: Apply a roi op to the features (e.g. RoiAlign).
+        :param detection_head: Apply a detection head on the features (e.g. DetectionHead).
+        :param deltas_to_boxes: The detection head returns deltas, these need to be converted to boxes (e.g. DeltasToBoxes).
+        :param filter_preds: (Optional) Filter the predicted boxes for further usage (e.g. FilterBoxes2D).
+        :param inject_rois: (Optional) The names for the attributes in the input used for injecting rois: dict(roi="name_in_input", roi_indices="name_in_input").
+        """
+        super().__init__()
+        self.box_to_roi = build_module(box_to_roi)
+        self.roi_op = build_module(roi_op)
+        self.detection_head = build_module(detection_head)
+        self.deltas_to_boxes = build_module(deltas_to_boxes)
+        self.filter_preds = build_module(filter_preds) if filter_preds is not None else None
+        self.inject_rois = inject_rois
+
+    def forward(self, inputs, features, detections):
+        in_boxes, in_indices = detections.boxes, detections.indices
+        if self.inject_rois is not None:
+            in_dict = inputs if isinstance(inputs, dict) else inputs._asdict()
+            in_boxes = torch.cat([in_boxes, in_dict[self.inject_rois["roi"]]], dim=0)
+            in_indices = torch.cat([in_indices, in_dict[self.inject_rois["roi_indices"]]], dim=0)
+        rois = self.box_to_roi(in_boxes)
+        features = self.roi_op(features, rois, in_indices)
+        raw_deltas, raw_class_ids, raw_indices = self.detection_head(features, in_indices)
+        raw_boxes = self.deltas_to_boxes(raw_deltas, in_boxes)
+        if self.filter_preds is not None:
+            boxes, class_ids, indices = self.filter_preds(inputs, raw_boxes, raw_class_ids, raw_indices)
+        else:
+            boxes, class_ids, indices = raw_boxes, raw_class_ids, raw_indices
+        return DetectionOutput(
+            anchors=in_boxes, raw_deltas=raw_deltas, raw_class_ids=raw_class_ids, raw_boxes=raw_boxes, raw_indices=raw_indices,
+            boxes=boxes, class_ids=class_ids, indices=indices
+        )
+
+
+@register_module()
+class FilterBoxes2D(Module):
+    def __init__(self, clip_to_image=True, min_size=[30, 30], k_pre_nms=12000, k_post_nms=2000, score_tresh=0.05):
+        """
+        """
+        super().__init__()
+        self.clip_to_image = clip_to_image
+        if min_size is not None:
+            self.filter_small = FilterSmallBoxes2D(min_size=min_size)
+        else:
+            self.filter_small = None
+        if k_pre_nms > 0:
+            self.top_k_pre_nms = GatherTopKIndicesOnIndexed(k=k_pre_nms)
+        else:
+            self.top_k_pre_nms = None
+        if score_tresh > 0:
+            self.filter_score = FilterLowScores(tresh=score_tresh)
+        else:
+            self.filter_score = None
+        self.nms = None
+        if k_post_nms > 0:
+            self.top_k_post_nms = GatherTopKIndicesOnIndexed(k=k_post_nms)
+        else:
+            self.top_k_post_nms = None
+
+    @RunOnlyOnce
+    def build_clip(self, inputs):
+        B, H, W, C = inputs.image.shape
+        self.clip_boxes = ClipBox2DToImage([H, W])
+
+    def forward(self, inputs, boxes, class_ids, indices):
+        if self.clip_to_image:
+            self.build_clip(inputs)
+            boxes = self.clip_boxes(boxes)
+        if self.filter_small is not None:
+            boxes, class_ids, indices = self.filter_small(boxes, class_ids, indices)
+        if self.top_k_pre_nms is not None:
+            class_ids, indices, boxes = self.top_k_pre_nms(class_ids, indices, boxes)
+        if self.filter_score is not None:
+            class_ids, indices, boxes = self.filter_score(class_ids, indices, boxes)
+        if self.nms is not None:
+            class_ids, boxes, indices = self.nms(class_ids, boxes, indices)
+        if self.top_k_post_nms is not None:
+            class_ids, indices, boxes = self.top_k_post_nms(class_ids, indices, boxes)
+        return boxes, class_ids, indices
+
+
+@register_module()
 class DetectionHead(Module):
     def __init__(self, num_classes: int, dim: int = 2, num_anchors: int = 9):
         """
@@ -69,7 +206,7 @@ class DetectionHead(Module):
         return self._forward_boxes(features), self._forward_class_ids(features), self._forward_batch_indices(batch_indices)
 
 
-@add_module()
+@register_module()
 class DeltasToBoxes(Module):
     def __init__(self, log_deltas=True, dimensionality=2) -> None:
         super().__init__()
@@ -93,7 +230,7 @@ class DeltasToBoxes(Module):
         return boxes
 
 
-@add_module()
+@register_module()
 class GridAnchorGenerator(Module):
     def __init__(self, ratios, scales, feature_map_scale, height=-1, width=-1, base_size=256):
         """
@@ -164,7 +301,7 @@ class GridAnchorGenerator(Module):
         return self.anchors
 
 
-@add_module()
+@register_module()
 class ClipBox2DToImage(Module):
     def __init__(self, image_size: Tuple[int, int]) -> None:
         super().__init__()
@@ -193,7 +330,7 @@ class ClipBox2DToImage(Module):
         return boxes
 
 
-@add_module()
+@register_module()
 class FilterSmallBoxes2D(Module):
     def __init__(self, min_size: List[float]) -> None:
         super().__init__()
@@ -207,7 +344,7 @@ class FilterSmallBoxes2D(Module):
         return tuple(results)
 
 
-@add_module()
+@register_module()
 class FilterLowScores(Module):
     def __init__(self, tresh, background_class_idx: int = 0) -> None:
         super().__init__()
@@ -222,7 +359,7 @@ class FilterLowScores(Module):
         return tuple(results)
 
 
-@add_module()
+@register_module()
 class NMS(Module):
     def __init__(self, tresh: float) -> None:
         super().__init__()

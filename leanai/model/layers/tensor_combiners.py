@@ -5,10 +5,10 @@
 """
 import torch
 from torch.nn import Module
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import register_module
 
 
-@add_module()
+@register_module()
 class Stack(Module):
     def __init__(self, axis):
         """
@@ -28,7 +28,7 @@ class Stack(Module):
         return torch.stack(tensor_list, dim=self.axis)
 
 
-@add_module()
+@register_module()
 class Concat(Module):
     def __init__(self, axis):
         """

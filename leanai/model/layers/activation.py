@@ -6,10 +6,10 @@
 from functools import partial
 import torch
 from torch.nn import Module
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import register_module
 
 
-@add_module()
+@register_module()
 class Activation(Module):
     def __init__(self, activation, **kwargs):
         """

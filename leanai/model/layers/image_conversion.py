@@ -6,10 +6,10 @@
 import torch
 from torch.nn import Module
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import register_module
 
 
-@add_module()
+@register_module()
 class ImageConversion(Module):
     def __init__(self, standardize, to_channel_first):
         """

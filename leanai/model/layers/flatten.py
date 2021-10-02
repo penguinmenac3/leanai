@@ -9,10 +9,10 @@ from typing import List, Tuple
 from torch import Tensor, zeros
 from torch.nn import Module
 
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import register_module
 
 
-@add_module()
+@register_module()
 class Flatten(Module):
     def __init__(self, dims=2):
         """
@@ -32,7 +32,7 @@ class Flatten(Module):
         return features.view(*shape)
 
 
-@add_module()
+@register_module()
 class VectorizeWithBatchIndices(Module):
     def __init__(self, channel_dimension=1, permutation: List[int] = None):
         super().__init__()

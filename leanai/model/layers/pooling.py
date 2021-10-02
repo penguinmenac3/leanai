@@ -11,10 +11,10 @@ from torch.nn.functional import avg_pool1d as _AveragePooling1D
 from torch.nn.functional import avg_pool2d as _AveragePooling2D
 from torch.nn.modules.pooling import AdaptiveAvgPool2d as _AdaptiveAvgPool2d
 from leanai.model.layers.flatten import Flatten
-from leanai.model.module_registry import add_module
+from leanai.model.module_registry import register_module
 
 
-@add_module()
+@register_module()
 class MaxPooling1D(Module):
     def __init__(self, pool_size=2, stride=None):
         """
@@ -36,7 +36,7 @@ class MaxPooling1D(Module):
         return _MaxPooling1D(features, self.pool_size, stride=self.stride)
 
 
-@add_module()
+@register_module()
 class MaxPooling2D(Module):
     def __init__(self, pool_size=(2, 2), stride=None):
         """
@@ -58,7 +58,7 @@ class MaxPooling2D(Module):
         return _MaxPooling2D(features, self.pool_size, stride=self.stride)
 
 
-@add_module()
+@register_module()
 class GlobalAveragePooling1D(Module):
     def __init__(self):
         """
@@ -73,7 +73,7 @@ class GlobalAveragePooling1D(Module):
         return self.flatten(_AveragePooling1D(features, features.size()[2:]))
 
 
-@add_module()
+@register_module()
 class GlobalAveragePooling2D(Module):
     def __init__(self):
         """
@@ -88,7 +88,7 @@ class GlobalAveragePooling2D(Module):
         return self.flatten(_AveragePooling2D(features, features.size()[2:]))
 
 
-@add_module()
+@register_module()
 class AdaptiveAvgPool2D(Module):
     def __init__(self, output_size):
         """
