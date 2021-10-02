@@ -25,7 +25,7 @@ class IParser(object):
 
 
 class Parser(IParser):
-    def __init__(self, InputType, OutputType) -> None:
+    def __init__(self, InputType, OutputType, ignore_file_not_found=False) -> None:
         """
         Parser decodes the samples required to populate the input and output type automatically.
 
@@ -47,9 +47,11 @@ class Parser(IParser):
         **Arguments**
         :param InputType: A definition of a named tuple that defines the input of the neural network.
         :param OutputType: A definition of a named tuple that defines the output of the neural network.
+        :param ignore_file_not_found: If a file is missing return None instead of an exception.  (Default: False).
         """
         self.dataset_input_type = InputType
         self.dataset_output_type = OutputType
+        self.ignore_file_not_found = ignore_file_not_found
 
     def __call__(self, sample: Dict[str, DataPromise]) -> Tuple[Any, Any]:
         dataset_input = self._fill_type_using_parsers(self.dataset_input_type, sample)
@@ -63,7 +65,13 @@ class Parser(IParser):
             if parser is None:
                 parser = getattr(self, "get_{}".format(k), None)
             if parser is not None:
-                data[k] = parser(sample)
+                try:
+                    data[k] = parser(sample)
+                except FileNotFoundError as e:
+                    if self.ignore_file_not_found:
+                        data[k] = None
+                    else:
+                        raise e
             else:
                 raise RuntimeError("Missing parser (parse_{}) for dataset_input_type field: {}".format(k, k))
         return namedtuple_type(**data)

@@ -154,8 +154,11 @@ class ISequenceDataset(_Dataset):
         raise NotImplementedError("Must be implemented by subclass.")
 
 
-class _CommonDataset:
+class CommonDataset(object):
     def __init__(self, file_provider_iterable: FileProviderIterable, parser: IParser) -> None:
+        """
+        A common base implementation from which all datasets inherit.
+        """
         super().__init__()
         self._file_provider = file_provider_iterable
         self._fp_iterator = None
@@ -164,6 +167,19 @@ class _CommonDataset:
 
     def _process(self, sample: Dict[str, DataPromise]) -> Any:
         sample = self._parser(sample)
+        return self.preprocess(sample)
+
+    def preprocess(self, sample: Any) -> Any:
+        """
+        Preprocesses samples.
+
+        The default implementation simply applies the transformers in order.
+        This function can be used for transforming the data representation as well as for data augmentation.
+        You can even overwrite this function to implement your own preprocessing from scratch.
+
+        :param sample: A sample as provided by the parser (what your dataset returns if no preprocess or transformers are provided).
+        :return: A sample in the format as the algorithm needs it.
+        """
         for transformer in self.transformers:
             sample = transformer(sample)
         return sample
@@ -182,7 +198,7 @@ class _CommonDataset:
         return len(self._file_provider)
 
 
-class IterableDataset(_CommonDataset, IIterableDataset):
+class IterableDataset(CommonDataset, IIterableDataset):
     def __init__(self, file_provider_iterable: FileProviderIterable, parser: IParser) -> None:
         """
         An implementation of the IIterableDataset using fileprovider and parser.
@@ -200,7 +216,7 @@ class IterableDataset(_CommonDataset, IIterableDataset):
         super().__init__(file_provider_iterable, parser)
 
 
-class SequenceDataset(_CommonDataset, ISequenceDataset):
+class SequenceDataset(CommonDataset, ISequenceDataset):
     def __init__(self, file_provider_sequence: FileProviderSequence, parser: IParser) -> None:
         """
         An implementation of the ISequenceDataset using fileprovider and parser.
@@ -223,7 +239,7 @@ class SequenceDataset(_CommonDataset, ISequenceDataset):
         return self._process(sample)
 
 class SimpleDataset(Parser, SequenceDataset):
-    def __init__(self, InputType, OutputType) -> None:
+    def __init__(self, InputType, OutputType, ignore_file_not_found=False) -> None:
         """
         SimpleDataset decodes the samples required to populate the input and output type automatically.
 
@@ -248,8 +264,9 @@ class SimpleDataset(Parser, SequenceDataset):
         **Arguments**
         :param InputType: A definition of a named tuple that defines the input of the neural network.
         :param OutputType: A definition of a named tuple that defines the output of the neural network.
+        :param ignore_file_not_found: If a file is missing return None instead of an exception.  (Default: False).
         """
-        Parser.__init__(self, InputType, OutputType)
+        Parser.__init__(self, InputType, OutputType, ignore_file_not_found=ignore_file_not_found)
         SequenceDataset.__init__(self, [], self)
 
     def set_sample_tokens(self, sample_tokens: List[Any]) -> None:
