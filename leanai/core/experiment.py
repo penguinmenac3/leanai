@@ -25,16 +25,13 @@ except:
 
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
-from leanai.core.logging import warn, info
+from leanai.core.logging import warn, info, set_logger, log_progress, get_timestamp
 from leanai.data.dataloader import DataLoader
-
-
-def _generate_version() -> str:
-    return datetime.fromtimestamp(time()).strftime('%Y-%m-%d_%H.%M.%S')
+from pytorch_lightning.utilities import move_data_to_device
 
 
 class Experiment(pl.LightningModule):
-    def __init__(self, mode: str=None, model: Module=None, loss: Module=None, meta_data_logging=True):
+    def __init__(self, InputType=None, mode: str=None, model: Module=None, loss: Module=None, meta_data_logging=True):
         """
         An experiment base class.
 
@@ -56,6 +53,8 @@ class Experiment(pl.LightningModule):
         :param meta_data_logging: If meta information such as FPS and CPU/GPU Usage should be logged. (Default: True)
         """
         super().__init__()
+        self.InputType = InputType
+        self.log_steps = 100
         self.model = model
         self.loss = loss
         self.meta_data_logging = meta_data_logging
@@ -74,8 +73,10 @@ class Experiment(pl.LightningModule):
             Without defining a version this means no checkpoint can be found as there will not exist a  matching folder.
         """
         if version is None:
-            version = _generate_version()
+            version = get_timestamp()
         self.output_path = os.path.join(output_path, name, version)
+        set_logger(os.path.join(self.output_path, "log.txt"))
+        log_progress("warmup", 0.0, 0.0)
         if checkpoint is None:
             checkpoint = self._find_checkpoint(name, version, output_path)
         elif not checkpoint.startswith("/"):
@@ -85,7 +86,7 @@ class Experiment(pl.LightningModule):
             example_input = self.example_input_array
             if isinstance(example_input, Tensor):
                 example_input = (example_input,)
-            outp = self(*self.transfer_batch_to_device(example_input))
+            outp = self(*move_data_to_device(example_input, self.device))
             if GRAPHVIZ:
                 try:
                     graph = make_dot(outp, params=dict(self.named_parameters()))
@@ -105,7 +106,9 @@ class Experiment(pl.LightningModule):
             resume_from_checkpoint=checkpoint,
             accelerator="ddp" if gpus > 1 else None
         )
-        return trainer.fit(self)
+        result = trainer.fit(self)
+        log_progress("done", 1.0, 0.0)
+        return result
 
     def run_test(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None):
         """
@@ -121,6 +124,8 @@ class Experiment(pl.LightningModule):
         if version is None:
             version = self._find_version(output_path, name)
         self.output_path = os.path.join(output_path, name, version)
+        set_logger(os.path.join(self.output_path, "log.txt"))
+        log_progress("warmup", 0.0, 0.0)
         if checkpoint is None:
             checkpoint = self._find_checkpoint(name, version, output_path)
         elif not checkpoint.startswith("/"):
@@ -147,7 +152,9 @@ class Experiment(pl.LightningModule):
         )
         ckpt = pl_load(checkpoint, map_location=lambda storage, loc: storage)
         self.load_state_dict(ckpt['state_dict'])
-        return trainer.test(self)
+        result = trainer.test(self)
+        log_progress("done", 1.0, 0.0)
+        return result
 
     def _find_checkpoint(self, name, version, output_path):
         resume_checkpoint = None
@@ -206,8 +213,13 @@ class Experiment(pl.LightningModule):
         :param batch: A batch of training data received from the train loader.
         :param batch_idx: The index of the batch.
         """
+        if batch_idx == 0:
+            log_progress(f"train", 0, 0)
         feature, target = batch
-        return self.step(feature, target, batch_idx)
+        loss = self.step(feature, target, batch_idx)
+        if batch_idx % self.log_steps == 0:
+            log_progress(f"train {self.current_epoch+1}/{self.hparams.max_epochs}", batch_idx * self.hparams.batch_size / len(self.train_data), loss)
+        return loss
 
     def validation_step(self, batch, batch_idx):
         """
@@ -217,8 +229,13 @@ class Experiment(pl.LightningModule):
         :param batch: A batch of val data received from the val loader.
         :param batch_idx: The index of the batch.
         """
+        if batch_idx == 0:
+            log_progress(f"val", 0, 0)
         feature, target = batch
-        return self.step(feature, target, batch_idx)
+        loss = self.step(feature, target, batch_idx)
+        if batch_idx % self.log_steps == 0:
+            log_progress(f"val {self.current_epoch+1}/{self.hparams.max_epochs}", batch_idx * self.hparams.batch_size / len(self.val_data), loss)
+        return loss
 
     def forward(self, *args, **kwargs):
         """
@@ -228,7 +245,12 @@ class Experiment(pl.LightningModule):
         """
         if self.model is None:
             raise RuntimeError("You must either provide a model to the constructor or set self.model yourself.")
-        return self.model(*args, **kwargs)
+        if self.InputType is not None:
+            inputs = self.InputType(*args, **kwargs)
+            results = self.model(inputs)
+        else:
+            results = self.model(*args, **kwargs)
+        return results
 
     def step(self, feature, target, batch_idx):
         """
