@@ -10,13 +10,14 @@ common case in object detection since the number of objects per frame is varying
 from typing import Iterable, Iterator, Any
 import re
 import sys
+import collections
 import traceback
 import torch
 import numpy as np
 from torch.utils.data import DataLoader as _DataLoader
 from torch.utils.data._utils.collate import default_collate_err_msg_format
 from torch.utils.data import IterableDataset as _IterableDataset
-from torch._six import container_abcs, string_classes, int_classes
+from torch._six import string_classes
 
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
@@ -89,15 +90,15 @@ def _default_collate(batch):
             return torch.as_tensor(batch)
     elif isinstance(elem, float):
         return torch.tensor(batch, dtype=torch.float64)
-    elif isinstance(elem, int_classes):
+    elif isinstance(elem, int):
         return torch.tensor(batch)
     elif isinstance(elem, string_classes):
         return batch
-    elif isinstance(elem, container_abcs.Mapping):
+    elif isinstance(elem, collections.abc.Mapping):
         return {key: _default_collate([d[key] for d in batch]) for key in elem}
     elif isinstance(elem, tuple) and hasattr(elem, '_fields'):  # namedtuple
         return elem_type(*(_default_collate(samples) for samples in zip(*batch)))
-    elif isinstance(elem, container_abcs.Sequence):
+    elif isinstance(elem, collections.abc.Sequence):
         # check to make sure that the elements in batch have consistent size
         it = iter(batch)
         elem_size = len(next(it))
