@@ -137,7 +137,7 @@ class Experiment(pl.LightningModule):
             example_input = self.example_input_array
             if isinstance(example_input, Tensor):
                 example_input = (example_input,)
-            self(*self.transfer_batch_to_device(example_input))
+            self(*move_data_to_device(example_input, self.device))
         trainer = pl.Trainer(
             default_root_dir=output_path,
             max_epochs=getattr(self.hparams, "max_epochs", 1000),
