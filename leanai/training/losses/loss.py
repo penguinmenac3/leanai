@@ -3,18 +3,16 @@
 
 > An implementation of the multiloss.
 """
-from typing import Union
 from torch import Tensor
 from torch.nn import Module
-from leanai.core.experiment import Experiment
 
 
 class Loss(Module):
-    def __init__(self, parent: Union['Loss', Experiment]):
+    def __init__(self, parent):
         """
         Create a loss.
 
-        :param parent: The parent is required for logging.
+        :param parent: The parent is required for logging. Parent must be of type Loss or Experiment.
         """
         super().__init__()
         # put in array so it is invisible to pytorch,
