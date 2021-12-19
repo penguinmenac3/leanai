@@ -6,6 +6,8 @@
 import os
 import pickle
 from typing import Any, Dict
+from tqdm import tqdm
+
 from leanai.data.parser import IParser
 from leanai.data.data_promise import DataPromise, DataPromiseFromBytes
 from leanai.data.file_provider import FileProviderSequence
@@ -48,7 +50,7 @@ class PickledDataset(SequenceDataset):
         """
         if not os.path.exists(cache_path):
             os.makedirs(cache_path)
-        for idx, sample in enumerate(data):
+        for idx, sample in enumerate(tqdm(data, desc="Creating PickledDataset")):
             fp = _pickle_file_path(cache_path, split, idx)
             with open(fp, "wb") as f:
                 pickle.dump(sample, f)
