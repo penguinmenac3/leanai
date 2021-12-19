@@ -1,6 +1,7 @@
 .idea
 .vscode
 checkpoints
+outputs/
 .logs
 .datasets
 .leanai
