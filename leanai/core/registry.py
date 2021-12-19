@@ -1,18 +1,25 @@
+"""doc
+# leanai.core.registry
 
+> Used to register model and loss modules, allowing automatic building and reconfiguration.
+
+The registry allows for registering modules and then building them according to a spec.
+This can make replacing just a submodule somewhere deep in the model easy, as just one config value has to be overwritten.
+"""
 from typing import Dict, Union
 
-class Registry:
+class Registry(object):
     _modules = {}
 
     def __init__(self, name) -> None:
         self.name = name
 
     def register(self, name=None):
-        def wrapper(clazz):
+        def _wrapper(clazz):
             local_name = clazz.__name__ if name is None else name
             self._modules[local_name] = clazz
             return clazz
-        return wrapper
+        return _wrapper
 
     def build(self, spec: Union[Dict[str, any], any]):
         if isinstance(spec, Dict):

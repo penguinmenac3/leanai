@@ -1,7 +1,7 @@
 """doc
 # leanai.core.logging
 
-> Logging for tensorflow and pytorch.
+> This is a logger taking care of logging the code, console outputs and images. It does not log tensors in tensorboard though. If you want to log to tensorboard use `experiment.log` instead of logging functions here.
 
 ## Outline
 
@@ -121,6 +121,8 @@ def compute_eta(progress, last_progress, last_update):
 
 """doc
 # Logging
+
+These functions help with actually writing stuff to the logfolder and setting it up.
 """
 def __get_all_files(root: str = None, forbidden_list: List[str] = PYTHON_IGNORE_LIST) -> List[str]:
     if root is None:
@@ -177,13 +179,13 @@ def _log_code(output_dir: str, overwrite_existing=False) -> None:
             _backup(f, base_path)
 
 
-def set_logger(log_file: str, log_code: bool = True) -> None:
+def set_logger(log_folder: str, log_code: bool = True) -> None:
     """
     Setup the logger.
 
     Creates the log folder, a src folder inside the log folder where it copies the current working directory.
 
-    :param log_file: File where the warns, errors, etc. should be written. The folder in which the log file is is used for checkpointing.
+    :param log_folder: Folder is is used for storing all logs (code, checkpoints, images, text).
     """
     def _set_logfile(log_file):
         global __logfile
@@ -203,7 +205,7 @@ def set_logger(log_file: str, log_code: bool = True) -> None:
             for data in __log_buffer:
                 f.write(data + "\n")
 
-    _set_logfile(log_file)
+    _set_logfile(os.path.join(log_folder, "log.txt"))
     _create_log_folder()
     _flush_log_buffer()
     log_folder = get_log_path()
