@@ -31,19 +31,10 @@ We argue, that you should store these artifacts even when not using leanai, to e
 
 ## Tutorials & Examples
 
-Starting with tutorials and examples is usually easiest.
-
-Classification Examples:
-
-* [Fasion MNIST: Simple](examples/mnist_simple.py)
-* [Fasion MNIST: Custom Model](examples/mnist_custom_model.py)
-* [Fasion MNIST: Custom Loss](examples/mnist_custom_loss.py)
-* **TODO** [Fasion MNIST: Custom Optimizer](examples/mnist_custom_optimizer.py)
-* [Fasion MNIST: Custom Dataset](examples/mnist_custom_dataset.py)
-
-Object Detection Examples:
-
-* [MSCOCO: Faster RCNN](examples/coco_faster_rcnn.py)
+1. [Getting Started with MNIST](examples/SimpleMNIST.ipynb)
+2. [Exploring Custom Code on MNIST](examples/DetailedMNIST.ipynb)
+3. [Detection on COCO (TODO update and notebook)](examples/coco_faster_rcnn.py)
+4. [Scaling to Multi-GPU (TODO write up)](examples/MultiGPU.ipynb)
 
 
 ### Fashion MNIST Classsification Example
@@ -52,46 +43,34 @@ Here is the simplest mnist example, it is so short it can be part of the main re
 
 ```python
 import torch
-from torch.optim import SGD, Optimizer
+from torch.optim import SGD
 
-from leanai.core.cli import run
-from leanai.core import Experiment
-from leanai.data.dataset import SequenceDataset
+from leanai.core.experiment import Experiment, set_seeds
 from leanai.data.datasets import FashionMNISTDataset
 from leanai.training.losses import SparseCrossEntropyLossFromLogits
-from leanai.model.module_from_json import Module
+from leanai.model.configs.simple_classifier import buildSimpleClassifier
 
-
-class MNISTExperiment(Experiment):
-    def __init__(
-        self,
-        learning_rate=1e-3,
-        batch_size=32,
-        max_epochs=10,
-        cache_path="cache/FashionMNIST",
-    ):
-        super().__init__()
-        self.save_hyperparameters()
-        self.model = Module.create("MNISTCNN", num_classes=10, logits=True),
-        self.loss = SparseCrossEntropyLossFromLogits()
-        self.example_input_array = torch.zeros((batch_size, 28, 28, 1), dtype=torch.float32)
-        self(self.example_input_array)
-
-    def prepare_dataset(self, split) -> None:
-        # Only called when cache path is set.
-        FashionMNISTDataset(split, self.hparams.cache_path, download=True)
-
-    def load_dataset(self, split) -> FashionMNISTDataset:
-        return FashionMNISTDataset(split, self.hparams.cache_path, download=False)
-
-    def configure_optimizers(self) -> Optimizer:
-        # Create an optimizer to your liking.
-        return SGD(self.parameters(), lr=self.hparams.learning_rate)
-
-
-if __name__ == "__main__":
-    # python examples/mnist_simple.py --cache_path=$DATA_PATH/FashionMNIST --output=$RESULTS_PATH --name="MNIST" --version="Simple"
-    run(MNISTExperiment)
+set_seeds()
+experiment = Experiment(
+    model=buildSimpleClassifier(num_classes=10, logits=True),
+    example_input=torch.zeros((2, 28, 28, 1), dtype=torch.float32),
+    output_path="outputs",
+)
+experiment.run_training(
+    load_dataset=dict(
+        type=FashionMNISTDataset,
+        data_path="outputs",
+    ),
+    build_loss=dict(
+        type=SparseCrossEntropyLossFromLogits,
+    ),
+    build_optimizer=dict(
+        type=SGD,
+        lr=1e-3,
+    ),
+    batch_size=32,
+    epochs=10,
+)
 ```
 
 ## Contributing
