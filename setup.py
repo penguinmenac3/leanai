@@ -44,13 +44,6 @@ setup(
     install_requires=install_requires,
     dependency_links=dependency_links,
     author_email='mail@michaelfuerst.de',
-    entry_points={
-        'console_scripts': [
-            'leanai = leanai.core.cli_tools:main',
-            'leanai_remote = leanai.core.cli_remote:main',
-            'leanai_launch = leanai.core.cli_launcher:main',
-        ]
-    },
     extras_require={
         'visualization': ['open3d==0.9.0.0', 'tensorboard'],
         'dev': ['nose2', 'packaging'],
