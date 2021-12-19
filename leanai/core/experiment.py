@@ -1,5 +1,5 @@
 """doc
-# leanai.core.experiment_lightning
+# leanai.core.experiment
 
 > A lightning module that runs an experiment in a managed way.
 
@@ -9,304 +9,366 @@ import os
 import pytorch_lightning as pl
 import psutil
 import GPUtil
-from typing import Any, Callable, Optional, Tuple, Union
 from time import time
-from datetime import datetime
-from torch.functional import Tensor
+from typing import Callable, Dict, Union, Optional
 from torch.nn import Module
+from torch.optim import Optimizer
+from torch.functional import Tensor
 from torch.utils.data.dataset import IterableDataset
 from pytorch_lightning.utilities.cloud_io import load as pl_load
-try:
-    from graphviz import Source
-    from torchviz import make_dot
-    GRAPHVIZ = True
-except:
-    GRAPHVIZ = False
+from pytorch_lightning.utilities import move_data_to_device
 
+from leanai.core.config import DictLike
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
-from leanai.core.logging import warn, info, set_logger, log_progress, get_timestamp
+from leanai.core.logging import warn, info, set_logger, get_timestamp
 from leanai.data.dataloader import DataLoader
-from pytorch_lightning.utilities import move_data_to_device
+from leanai.training.losses.loss import Loss
+
+
+def set_seeds():
+    """
+    Sets the seeds of torch, numpy and random for reproducability.
+    """
+    import torch
+    torch.manual_seed(0)
+    import numpy as np
+    np.random.seed(0)
+    import random
+    random.seed(0)
+
+
+def _env_defaults(value, env, default):
+    if value is not None:
+        return value
+    if env in os.environ:
+        return os.environ[env]
+    return default
 
 
 class Experiment(pl.LightningModule):
-    def __init__(self, InputType=None, mode: str=None, model: Module=None, loss: Module=None, meta_data_logging=True):
+    def __init__(
+        self,
+        model: Module,
+        config: Dict[str, any] = dict(),
+        output_path=None,
+        version=None,
+        example_input=None,
+        InputType=None,
+        meta_data_logging=True,
+        autodetect_remote_mode=True
+    ):
         """
-        An experiment base class.
+        An experiment takes care of managing your training and evaluation on multiple GPUs and provides the loops and logging.
 
-        All experiments must inherit from this.
-        
-        ```python
-        from pytorch_mjolnir import Experiment
-        class MyExperiment(Experiment):
-            def __init__(self, learning_rate=1e-3, batch_size=32):
-                super().__init__(
-                    model=Model(),
-                    loss=Loss(self)
+        You just need to provide a model, loss, and dataset loader and the rest will be handled by the experiment.
+
+        ```
+        def on_inference_step(experiment, predictions, features, targets):
+            pass
+
+        def main():
+            experiment = Experiment(
+                config=dict(),  # you can store your config in a dict
+                output_path="logs/Results"
+                model=MyModel(),
+            )
+            experiment.run_training(
+                load_dataset=dict(
+                    type=FashionMNISTDataset,
+                    data_path="logs/FashionMNIST",
+                ),
+                build_loss=dict(
+                    type=MyLoss,
+                    some_param=42,  # all arguments to your loss
                 )
-                self.save_hyperparameters()
+                build_optimizer=dict(
+                    type=SGD,
+                    lr=1e-3,  # all arguments except model.params()
+                )
+                batch_size=4,
+                epochs=50,
+            )
+            experiment.run_inference(
+                load_dataset=dict(
+                    type=FashionMNISTDataset,
+                    split="val",
+                    data_path="logs/FashionMNIST",
+                ),
+                handle_step=on_inference_step
+            )
         ```
 
         :param model: The model used for the forward.
-        :param loss: The loss used for computing the difference between prediction of the model and the targets.
+        :param output_path: The path where to store the outputs of the experiment (Default: Current working directory or autodetect if parent is output folder).
+        :param version: The version name under which the experiment should be done. If None will use the current timestamp or autodetect if parent is output folder.
+        :param example_input: An example input that can be used to initialize the model.
+        :param InputType: If provided a batch gets cast to this type before being passed to the model. `model(InputType(*args))`
         :param meta_data_logging: If meta information such as FPS and CPU/GPU Usage should be logged. (Default: True)
+        :param autodetect_remote_mode: If the output_path and version are allowed to be automatically found in parent folders. Overwrites whatever you set if found.
+            This is required, if you execute the code from within the backup in the checkpoint. Remote execution relies on this feature.
+            (Default: True)
         """
         super().__init__()
-        self.InputType = InputType
-        self.log_steps = 100
+        if autodetect_remote_mode and \
+            os.path.exists("../../log.txt") or os.path.exists("../../src"):
+            output_path = os.path.abspath("../../..")
+            version = os.path.dirname("../..")
+        if version is None:
+            version = get_timestamp()
+        output_path = _env_defaults(output_path, "RESULTS_PATH", os.getcwd())
+        self.version = version
+        self.output_path = output_path
         self.model = model
-        self.loss = loss
-        self.meta_data_logging = meta_data_logging
+        self.config = config
+        self._InputType = InputType
+        if example_input is not None:
+            self.example_input_array = example_input
+            self._run_model_on_example(example_input)
+        self._meta_data_logging = meta_data_logging
+        set_logger(os.path.join(output_path, version), log_code=True)
 
-    def run_train(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None):
+        self._batch_size = 1
+        self._num_workers = 0
+        self.loss = None
+        self._load_dataset = None
+        self._build_optimizer = None
+
+    def configure_gradient_clipping(self, optimizer: Optimizer, optimizer_idx: int, gradient_clip_val: Optional[Union[int, float]] = None, gradient_clip_algorithm: Optional[str] = None):
+        return super().configure_gradient_clipping(optimizer, optimizer_idx, gradient_clip_val=gradient_clip_val, gradient_clip_algorithm=gradient_clip_algorithm)
+
+    def _run_model_on_example(self, example_input):
+        if isinstance(example_input, Tensor):
+            example_input = (example_input,)
+        inp = move_data_to_device(example_input, self.device)
+        if self._InputType is not None:
+            self.model(self._InputType(*inp))
+        else:
+            self.model(*inp)
+
+    def _dict_to_callable(self, spec):
+        params = dict(**spec)
+        constructor = params["type"]
+        del params["type"]
+        return constructor, params
+
+    def run_training(
+        self,
+        load_dataset: Union[Callable, Dict],
+        build_loss: Union[Callable, Dict],
+        build_optimizer: Union[Callable, Dict],
+        batch_size: int = 1,
+        epochs: int = 1000,
+        num_dataloader_threads: int = 0,
+        gpus: int = None,
+        nodes: int = None,
+        checkpoint: str = None
+    ):
         """
-        Run the experiment.
-
-        :param name: The name of the family of experiments you are conducting.
-        :param gpus: The number of gpus used for training.
-        :param nodes: The number of nodes used for training.
-        :param version: The name for the specific run of the experiment in the family (defaults to a timestamp).
-        :param output_path: The path where to store the outputs of the experiment (defaults to the current working directory).
+        Run the training loop of the experiment.
+        
+        :param load_dataset: A function that loads a dataset given a datasplit ("train"/"val"/"test").
+        :param build_loss: A function that builds the loss used for computing the difference between prediction of the model and the targets.
+            The function has a signature `def build_loss(experiment) -> Module`.
+        :param build_optimizer: A function that builds the optimizer.
+            The function has a signature `def build_optimizer(experiment) -> Optimizer`.
+        :param batch_size: The batch size for training.
+        :param epochs: For how many epochs to train, if the loss does not converge earlier.
+        :param num_dataloader_threads: The number of threads to use for dataloading. (Default: 0 = use main thread)
+        :param gpus: The number of gpus used for training. (Default: SLURM_GPUS or 1)
+        :param nodes: The number of nodes used for training. (Default: SLURM_NODES or 1)
         :param checkpoint: The path to the checkpoint that should be resumed (defaults to None).
             In case of None this searches for a checkpoint in {output_path}/{name}/{version}/checkpoints and resumes it.
             Without defining a version this means no checkpoint can be found as there will not exist a  matching folder.
         """
-        if version is None:
-            version = get_timestamp()
-        self.output_path = os.path.join(output_path, name, version)
-        set_logger(os.path.join(self.output_path, "log.txt"))
-        log_progress("warmup", 0.0, 0.0)
-        if checkpoint is None:
-            checkpoint = self._find_checkpoint(name, version, output_path)
-        elif not checkpoint.startswith("/"):
-            checkpoint = os.path.join(self.output_path, checkpoint)
-        self.testing = False    
-        if hasattr(self, "example_input_array") and self.example_input_array is not None:
-            example_input = self.example_input_array
-            if isinstance(example_input, Tensor):
-                example_input = (example_input,)
-            outp = self(*move_data_to_device(example_input, self.device))
-            if GRAPHVIZ:
-                try:
-                    graph = make_dot(outp, params=dict(self.named_parameters()))
-                    Source(graph).render(os.path.join(self.output_path, "train_graph"))
-                except Exception as e:
-                    warn(f"Failed to create graph visualization: {e}")
+        self._testing = False
+        self._batch_size = batch_size
+        self._load_dataset = load_dataset
+        self._build_optimizer = build_optimizer
+        self._num_workers = num_dataloader_threads
+        if isinstance(build_loss, dict):
+            constructor, params = self._dict_to_callable(build_loss)
+            if isinstance(constructor, Loss.__class__):
+                self.loss = constructor(parent=self, **params)
+            else:
+                self.loss = constructor(**params)
+        else:
+            self.loss = build_loss(self)
+        gpus = int(_env_defaults(gpus, "SLURM_GPUS", 1))
+        nodes = int(_env_defaults(nodes, "SLURM_NODES", 1))
         trainer = pl.Trainer(
-            default_root_dir=output_path,
-            max_epochs=getattr(self.hparams, "max_epochs", 1000),
+            default_root_dir=self.output_path,
+            max_epochs=epochs,
             gpus=gpus,
             num_nodes=nodes,
             logger=TensorBoardLogger(
-                save_dir=output_path, version=version, name=name,
+                save_dir=self.output_path, version=self.version, name="",
                 log_graph=hasattr(self, "example_input_array")  and self.example_input_array is not None,
                 #default_hp_metric=False
             ),
-            resume_from_checkpoint=checkpoint,
+            resume_from_checkpoint=self._find_checkpoint(checkpoint),
             accelerator="ddp" if gpus > 1 else None
         )
-        result = trainer.fit(self)
-        log_progress("done", 1.0, 0.0)
-        return result
+        return trainer.fit(self)
 
-    def run_test(self, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None):
+    def run_inference(
+        self,
+        load_dataset: Callable,
+        handle_step: Callable,
+        batch_size: int = 1,
+        gpus: int = None,
+        nodes: int = None,
+        checkpoint: str = None
+    ):
         """
-        Evaluate the experiment.
+        Run inference for the experiment.
+        This uses the pytorch_lightning test mode and runs the model in test mode through some data.
 
-        :param name: The name of the family of experiments you are conducting.
-        :param gpus: The number of gpus used for training.
-        :param nodes: The number of nodes used for training.
-        :param version: The name for the specific run of the experiment in the family (defaults to a timestamp).
-        :param output_path: The path where to store the outputs of the experiment (defaults to the current working directory).
-        :param evaluate_checkpoint: The path to the checkpoint that should be loaded (defaults to None).
+        :param load_dataset: A function that loads a dataset for inference.
+        :param handle_step: A function that is called with the predictions of the model and the batch data.
+            The function has a signature `def handle_step(predictions, features, targets) -> void`.
+        :param batch_size: The batch size for training.
+        :param gpus: The number of gpus used for training. (Default: SLURM_GPUS or 1)
+        :param nodes: The number of nodes used for training. (Default: SLURM_NODES or 1)
+        :param checkpoint: The path to the checkpoint that should be loaded (defaults to None).
         """
-        if version is None:
-            version = self._find_version(output_path, name)
-        self.output_path = os.path.join(output_path, name, version)
-        set_logger(os.path.join(self.output_path, "log.txt"))
-        log_progress("warmup", 0.0, 0.0)
-        if checkpoint is None:
-            checkpoint = self._find_checkpoint(name, version, output_path)
-        elif not checkpoint.startswith("/"):
-            checkpoint = os.path.join(self.output_path, checkpoint)
-        if checkpoint is None or not os.path.exists(checkpoint):
-            raise RuntimeError(f"Checkpoint does not exist: {str(checkpoint)}")
-        self.testing = True
-        if hasattr(self, "example_input_array") and self.example_input_array is not None:
-            example_input = self.example_input_array
-            if isinstance(example_input, Tensor):
-                example_input = (example_input,)
-            self(*move_data_to_device(example_input, self.device))
+        self._testing = True
+        self._batch_size = batch_size
+        self._load_dataset = load_dataset
+        self._handle_test_step = handle_step
+        self.load_checkpoint(checkpoint)
+        gpus = int(_env_defaults(gpus, "SLURM_GPUS", 1))
+        nodes = int(_env_defaults(nodes, "SLURM_NODES", 1))
         trainer = pl.Trainer(
-            default_root_dir=output_path,
-            max_epochs=getattr(self.hparams, "max_epochs", 1000),
+            default_root_dir=self.output_path,
+            max_epochs=1,
             gpus=gpus,
             num_nodes=nodes,
             logger=TensorBoardLogger(
-                save_dir=output_path, version=version, name=name,
+                save_dir=self.output_path, version=self.version, name="",
                 log_graph=hasattr(self, "example_input_array") and self.example_input_array is not None,
                 default_hp_metric=False
             ),
             accelerator="ddp" if gpus > 1 else None
         )
-        ckpt = pl_load(checkpoint, map_location=lambda storage, loc: storage)
-        self.load_state_dict(ckpt['state_dict'])
-        result = trainer.test(self)
-        log_progress("done", 1.0, 0.0)
-        return result
+        return trainer.test(self)
 
-    def _find_checkpoint(self, name, version, output_path):
-        resume_checkpoint = None
-        checkpoint_folder = os.path.join(output_path, name, version, "checkpoints")
-        if os.path.exists(checkpoint_folder):
-            checkpoints = sorted(os.listdir(checkpoint_folder))
-            if len(checkpoints) > 0:
-                resume_checkpoint = os.path.join(checkpoint_folder, checkpoints[-1])
-                info(f"Using Checkpoint: {resume_checkpoint}")
-        return resume_checkpoint
+    # **********************************************
+    # Configure training
+    # **********************************************
+    def configure_optimizers(self):
+        if isinstance(self._build_optimizer, dict):
+            constructor, params = self._dict_to_callable(self._build_optimizer)
+            return constructor(self.parameters(), **params)
+        else:
+            return self._build_optimizer(self)
 
-    def _find_version(self, output_path, name):
-        version = None
-        results = os.path.join(output_path, name)
-        if os.path.exists(results):
-            versions = sorted(os.listdir(results))
-            if len(versions) > 0:
-                version = os.path.join(results, versions[-1])
-                info(f"Using Version: {version}")
-        return version
-
-    def prepare_dataset(self, split: str) -> None:
-        """
-        **ABSTRACT:** Prepare the dataset for a given split.
-        
-        Only called when cache path is set and cache does not exist yet.
-        As this is intended for caching.
-
-        :param split: A string indicating the split.
-        """
-        raise NotImplementedError("Must be implemented by inheriting classes.")
-
-    def load_dataset(self, split: str) -> Any:
-        """
-        **ABSTRACT:** Load the data for a given split.
-
-        :param split: A string indicating the split.
-        :return: A dataset.
-        """
-        raise NotImplementedError("Must be implemented by inheriting classes.")
-
-    def prepare_data(self):
-        # Prepare the data once (no state allowed due to multi-gpu/node setup.)
-        if not self.testing:
-            cache_path = getattr(self.hparams, "cache_path", None)
-            if cache_path is not None and not os.path.exists(cache_path):
-                self.prepare_dataset(SPLIT_TRAIN)
-                self.prepare_dataset(SPLIT_VAL)
-                assert not getattr(self.hparams, "data_only_prepare", False)
-
+    # **********************************************
+    # Steping through the model
+    # **********************************************
     def training_step(self, batch, batch_idx):
-        """
-        Executes a training step.
-
-        By default this calls the step function.
-        :param batch: A batch of training data received from the train loader.
-        :param batch_idx: The index of the batch.
-        """
-        if batch_idx == 0:
-            log_progress(f"train", 0, 0)
         feature, target = batch
-        loss = self.step(feature, target, batch_idx)
-        if batch_idx % self.log_steps == 0:
-            log_progress(f"train {self.current_epoch+1}/{self.hparams.max_epochs}", batch_idx * self.hparams.batch_size / len(self.train_data), loss)
-        return loss
+        return self.trainval_step(feature, target, batch_idx)
 
     def validation_step(self, batch, batch_idx):
-        """
-        Executes a validation step.
-
-        By default this calls the step function.
-        :param batch: A batch of val data received from the val loader.
-        :param batch_idx: The index of the batch.
-        """
-        if batch_idx == 0:
-            log_progress(f"val", 0, 0)
         feature, target = batch
-        loss = self.step(feature, target, batch_idx)
-        if batch_idx % self.log_steps == 0:
-            log_progress(f"val {self.current_epoch+1}/{self.hparams.max_epochs}", batch_idx * self.hparams.batch_size / len(self.val_data), loss)
-        return loss
+        return self.trainval_step(feature, target, batch_idx)
 
-    def forward(self, *args, **kwargs):
-        """
-        Proxy to self.model.
-        
-        Arguments get passed unchanged.
-        """
-        if self.model is None:
-            raise RuntimeError("You must either provide a model to the constructor or set self.model yourself.")
-        if self.InputType is not None:
-            inputs = self.InputType(*args, **kwargs)
-            results = self.model(inputs)
-        else:
-            results = self.model(*args, **kwargs)
-        return results
+    def test_step(self, batch, batch_idx):
+        feature, target = batch
+        prediction = self(*feature)
+        self._handle_test_step(self, prediction, feature, target)
 
-    def step(self, feature, target, batch_idx):
-        """
-        Implementation of a supervised training step.
-
-        The output of the model will be directly given to the loss without modification.
-
-        :param feature: A namedtuple from the dataloader that will be given to the forward as ordered parameters.
-        :param target: A namedtuple from the dataloader that will be given to the loss.
-        :return: The loss.
-        """
+    def trainval_step(self, feature, target, batch_idx):
         if self.loss is None:
-            raise RuntimeError("You must either provide a loss to the constructor or set self.loss yourself.")
+            raise RuntimeError("You must either provide a loss to the run_training.")
         prediction = self(*feature)
         loss = self.loss(prediction, target)
-        if self.meta_data_logging:
-            self.log_fps()
-            self.log_resources()
+        if self._meta_data_logging:
+            self._log_fps()
+            self._log_resources()
         self.log('loss/total', loss)
         return loss
 
-    def setup(self, stage=None):
-        """
-        This function is for setting up the training.
+    def forward(self, *feature):
+        if self._InputType is not None:
+            prediction = self.model(self._InputType(*feature))
+        else:
+            prediction = self.model(*feature)
+        return prediction
 
-        The default implementation calls the load_dataset function and
-        stores the result in self.train_data and self.val_data.
-        (It is called once per process.)
-        """
-        if not self.testing:
-            self.train_data = self.load_dataset(SPLIT_TRAIN)
-            self.val_data = self.load_dataset(SPLIT_VAL)
+    # **********************************************
+    # Loading the datasets in various configurations
+    # **********************************************
+    def setup(self, stage=None):
+        if not self._testing:
+            if isinstance(self._load_dataset, dict):
+                fun, params = self._dict_to_callable(self._load_dataset)
+                self.train_data = fun(split=SPLIT_TRAIN, **params)
+                self.val_data = fun(split=SPLIT_VAL, **params)
+            else:
+                self.train_data = self._load_dataset(self, SPLIT_TRAIN)
+                self.val_data = self._load_dataset(self, SPLIT_VAL)
+        else:
+            if isinstance(self._load_dataset, dict):
+                fun, params = self._dict_to_callable(self._load_dataset)
+                self.test_data = fun(**params)
+            else:
+                self.test_data = self._load_dataset(self)
 
     def train_dataloader(self):
-        """
-        Create a training dataloader.
-
-        The default implementation wraps self.train_data in a Dataloader.
-        """
         shuffle = True
         if isinstance(self.train_data, IterableDataset):
             shuffle = False
-        return DataLoader(self.train_data, batch_size=self.hparams.batch_size, shuffle=shuffle, num_workers=getattr(self.hparams, "num_workers", 0))
+        return DataLoader(self.train_data, batch_size=self._batch_size, shuffle=shuffle, num_workers=self._num_workers)
 
     def val_dataloader(self):
-        """
-        Create a validation dataloader.
+        return DataLoader(self.val_data, batch_size=self._batch_size, shuffle=False, num_workers=self._num_workers)
 
-        The default implementation wraps self.val_data in a Dataloader.
-        """
-        return DataLoader(self.val_data, batch_size=self.hparams.batch_size, shuffle=False, num_workers=getattr(self.hparams, "num_workers", 0))
+    def test_dataloader(self):
+        return DataLoader(self.test_data, batch_size=self._batch_size, shuffle=False, num_workers=self._num_workers)
 
-    def log_resources(self, gpus_separately=False):
+    # **********************************************
+    # Custom Tensorboard Logger integration
+    # **********************************************
+    def train(self, mode=True):
+        if self.logger is not None and hasattr(self.logger, "set_mode"):
+            if self._testing:
+                self.logger.set_mode("test")
+            else:
+                self.logger.set_mode("train" if mode else "val")
+        super().train(mode)
+
+    # **********************************************
+    # Helpers
+    # **********************************************
+    def load_checkpoint(self, checkpoint: str = None):
         """
-        Log the cpu, ram and gpu usage.
+        Load a checkpoint.
+        Either find one or use the path provided.
         """
+        checkpoint = self._find_checkpoint(checkpoint)
+        if checkpoint is None or not os.path.exists(checkpoint):
+            raise RuntimeError(f"Checkpoint does not exist: {str(checkpoint)}")
+        ckpt = pl_load(checkpoint, map_location=lambda storage, loc: storage)
+        self.load_state_dict(ckpt['state_dict'])
+
+    def _find_checkpoint(self, checkpoint: str = None):
+        """
+        Find a checkpoint or make the relative path to a checkpoint in an experiment absolute.
+        """
+        if checkpoint is None:
+            checkpoint_folder = os.path.join(self.output_path, "checkpoints")
+            if os.path.exists(checkpoint_folder):
+                checkpoints = sorted(os.listdir(checkpoint_folder))
+                if len(checkpoints) > 0:
+                    checkpoint = os.path.join(checkpoint_folder, checkpoints[-1])
+                    info(f"Using Checkpoint: {checkpoint}")
+        elif not checkpoint.startswith("/"):
+            checkpoint = os.path.join(self.output_path, checkpoint)
+        return checkpoint
+
+    def _log_resources(self, gpus_separately=False):
         cpu = psutil.cpu_percent()
         ram = psutil.virtual_memory().used / 1000000000
         self.log("sys/SYS_CPU (%)", cpu)
@@ -322,25 +384,9 @@ class Experiment(pl.LightningModule):
         self.log("sys/GPU_UTIL (%)", total_gpu_load)
         self.log("sys/GPU_MEM (GB)", total_gpu_mem / 1000)
 
-    def log_fps(self):
-        """
-        Log the FPS that is achieved.
-        """
+    def _log_fps(self):
         if hasattr(self, "_iter_time"):
             elapsed = time() - self._iter_time
-            fps = self.hparams.batch_size / elapsed
+            fps = self._batch_size / elapsed
             self.log("sys/FPS", fps)
         self._iter_time = time()
-
-    def train(self, mode=True):
-        """
-        Set the experiment to training mode and val mode.
-
-        This is done automatically. You will not need this usually.
-        """
-        if self.logger is not None and hasattr(self.logger, "set_mode"):
-            if self.testing:
-                self.logger.set_mode("test")
-            else:
-                self.logger.set_mode("train" if mode else "val")
-        super().train(mode)
