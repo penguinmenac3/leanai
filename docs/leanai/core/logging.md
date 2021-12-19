@@ -4,7 +4,7 @@
 
 # leanai.core.logging
 
-> Logging for tensorflow and pytorch.
+> This is a logger taking care of logging the code, console outputs and images. It does not log tensors in tensorboard though. If you want to log to tensorboard use `experiment.log` instead of logging functions here.
 
 ## Outline
 
@@ -84,15 +84,17 @@ Uses the current timestamp the last_update and the difference between progresses
 
 # Logging
 
+These functions help with actually writing stuff to the logfolder and setting it up.
+
 
 ---
-### *def* **set_logger**(log_file: str, log_code: bool = True) -> None
+### *def* **set_logger**(log_folder: str, log_code: bool = True) -> None
 
 Setup the logger.
 
 Creates the log folder, a src folder inside the log folder where it copies the current working directory.
 
-* **log_file**: File where the warns, errors, etc. should be written. The folder in which the log file is is used for checkpointing.
+* **log_folder**: Folder is is used for storing all logs (code, checkpoints, images, text).
 
 
 ---

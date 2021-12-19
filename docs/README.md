@@ -3,30 +3,26 @@
 
 * [COCO using Faster RCNN
 ](examples/coco_faster_rcnn.md)
-* [Fashion MNIST Simple
-](examples/mnist_simple.md)
-* [Fashion MNIST with custom dataset
-](examples/mnist_custom_dataset.md)
-* [Fashion MNIST with custom loss
-](examples/mnist_custom_loss.md)
-* [Fashion MNIST with custom model
-](examples/mnist_custom_model.md)
+* [Detailed MNIST (with custom code)
+](examples/DetailedMNIST.md)
+* [Simple MNIST
+](examples/SimpleMNIST.md)
 
 
 # Documentation
 
 * [leanai.core.annotations
 ](leanai/core/annotations.md)
-* [leanai.core.cli
-](leanai/core/cli.md)
-* [leanai.core.cli_tools
-](leanai/core/cli_tools.md)
+* [leanai.core.config
+](leanai/core/config.md)
 * [leanai.core.definitions
 ](leanai/core/definitions.md)
-* [leanai.core.experiment_lightning
+* [leanai.core.experiment
 ](leanai/core/experiment.md)
 * [leanai.core.logging
 ](leanai/core/logging.md)
+* [leanai.core.registry
+](leanai/core/registry.md)
 * [leanai.core.tensorboard
 ](leanai/core/tensorboard.md)
 * [leanai.data.data_promise
@@ -103,9 +99,5 @@
 ](leanai/training/losses/regression.md)
 * [leanai.training.losses.sumloss
 ](leanai/training/losses/sumloss.md)
-* [leanai_launch
-](leanai/core/cli_launcher.md)
-* [leanai_remote
-](leanai/core/cli_remote.md)
 
 

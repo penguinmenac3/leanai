@@ -2,7 +2,7 @@
 
 
 
-# leanai.core.experiment_lightning
+# leanai.core.experiment
 
 > A lightning module that runs an experiment in a managed way.
 
@@ -10,165 +10,165 @@ There is first the Experiment base class from wich all experiments must inherit 
 
 
 ---
+### *def* **set_seeds**()
+
+Sets the seeds of torch, numpy and random for reproducability.
+
+
+---
 ---
 ## *class* **Experiment**(pl.LightningModule)
 
-An experiment base class.
+An experiment takes care of managing your training and evaluation on multiple GPUs and provides the loops and logging.
 
-All experiments must inherit from this.
+You just need to provide a model, loss, and dataset loader and the rest will be handled by the experiment.
 
-```python
-from pytorch_mjolnir import Experiment
-class MyExperiment(Experiment):
-def __init__(self, learning_rate=1e-3, batch_size=32):
-super().__init__(
-model=Model(),
-loss=Loss(self)
+```
+def on_inference_step(experiment, predictions, features, targets):
+pass
+
+def main():
+experiment = Experiment(
+config=dict(),  # you can store your config in a dict
+output_path="logs/Results"
+model=MyModel(),
 )
-self.save_hyperparameters()
+experiment.run_training(
+load_dataset=dict(
+type=FashionMNISTDataset,
+data_path="logs/FashionMNIST",
+),
+build_loss=dict(
+type=MyLoss,
+some_param=42,  # all arguments to your loss
+)
+build_optimizer=dict(
+type=SGD,
+lr=1e-3,  # all arguments except model.params()
+)
+batch_size=4,
+epochs=50,
+)
+experiment.run_inference(
+load_dataset=dict(
+type=FashionMNISTDataset,
+split="val",
+data_path="logs/FashionMNIST",
+),
+handle_step=on_inference_step
+)
 ```
 
 * **model**: The model used for the forward.
-* **loss**: The loss used for computing the difference between prediction of the model and the targets.
+* **output_path**: The path where to store the outputs of the experiment (Default: Current working directory or autodetect if parent is output folder).
+* **version**: The version name under which the experiment should be done. If None will use the current timestamp or autodetect if parent is output folder.
+* **example_input**: An example input that can be used to initialize the model.
+* **InputType**: If provided a batch gets cast to this type before being passed to the model. `model(InputType(*args))`
 * **meta_data_logging**: If meta information such as FPS and CPU/GPU Usage should be logged. (Default: True)
+* **autodetect_remote_mode**: If the output_path and version are allowed to be automatically found in parent folders. Overwrites whatever you set if found.
+This is required, if you execute the code from within the backup in the checkpoint. Remote execution relies on this feature.
+(Default: True)
 
 
 ---
-### *def* **run_train**(*self*, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None)
+### *def* **configure_gradient_clipping**(*self*, optimizer: Optimizer, optimizer_idx: int, gradient_clip_val: Optional[Union[int, float]] = None, gradient_clip_algorithm: Optional[str] = None)
 
-Run the experiment.
+*(no documentation found)*
 
-* **name**: The name of the family of experiments you are conducting.
-* **gpus**: The number of gpus used for training.
-* **nodes**: The number of nodes used for training.
-* **version**: The name for the specific run of the experiment in the family (defaults to a timestamp).
-* **output_path**: The path where to store the outputs of the experiment (defaults to the current working directory).
+---
+### *def* **run_training**
+
+Run the training loop of the experiment.
+
+* **load_dataset**: A function that loads a dataset given a datasplit ("train"/"val"/"test").
+* **build_loss**: A function that builds the loss used for computing the difference between prediction of the model and the targets.
+The function has a signature `def build_loss(experiment) -> Module`.
+* **build_optimizer**: A function that builds the optimizer.
+The function has a signature `def build_optimizer(experiment) -> Optimizer`.
+* **batch_size**: The batch size for training.
+* **epochs**: For how many epochs to train, if the loss does not converge earlier.
+* **num_dataloader_threads**: The number of threads to use for dataloading. (Default: 0 = use main thread)
+* **gpus**: The number of gpus used for training. (Default: SLURM_GPUS or 1)
+* **nodes**: The number of nodes used for training. (Default: SLURM_NODES or 1)
 * **checkpoint**: The path to the checkpoint that should be resumed (defaults to None).
 In case of None this searches for a checkpoint in {output_path}/{name}/{version}/checkpoints and resumes it.
 Without defining a version this means no checkpoint can be found as there will not exist a  matching folder.
 
 
 ---
-### *def* **run_test**(*self*, name: str, gpus: int, nodes: int, version=None, output_path=os.getcwd(), checkpoint=None)
+### *def* **run_inference**
 
-Evaluate the experiment.
+Run inference for the experiment.
+This uses the pytorch_lightning test mode and runs the model in test mode through some data.
 
-* **name**: The name of the family of experiments you are conducting.
-* **gpus**: The number of gpus used for training.
-* **nodes**: The number of nodes used for training.
-* **version**: The name for the specific run of the experiment in the family (defaults to a timestamp).
-* **output_path**: The path where to store the outputs of the experiment (defaults to the current working directory).
-* **evaluate_checkpoint**: The path to the checkpoint that should be loaded (defaults to None).
-
-
----
-### *def* **prepare_dataset**(*self*, split: str) -> None
-
-**ABSTRACT:** Prepare the dataset for a given split.
-
-Only called when cache path is set and cache does not exist yet.
-As this is intended for caching.
-
-* **split**: A string indicating the split.
+* **load_dataset**: A function that loads a dataset for inference.
+* **handle_step**: A function that is called with the predictions of the model and the batch data.
+The function has a signature `def handle_step(predictions, features, targets) -> void`.
+* **batch_size**: The batch size for training.
+* **gpus**: The number of gpus used for training. (Default: SLURM_GPUS or 1)
+* **nodes**: The number of nodes used for training. (Default: SLURM_NODES or 1)
+* **checkpoint**: The path to the checkpoint that should be loaded (defaults to None).
 
 
 ---
-### *def* **load_dataset**(*self*, split: str) -> Any
-
-**ABSTRACT:** Load the data for a given split.
-
-* **split**: A string indicating the split.
-* **returns**: A dataset.
-
-
----
-### *def* **prepare_data**(*self*)
+### *def* **configure_optimizers**(*self*)
 
 *(no documentation found)*
 
 ---
 ### *def* **training_step**(*self*, batch, batch_idx)
 
-Executes a training step.
-
-By default this calls the step function.
-* **batch**: A batch of training data received from the train loader.
-* **batch_idx**: The index of the batch.
-
+*(no documentation found)*
 
 ---
 ### *def* **validation_step**(*self*, batch, batch_idx)
 
-Executes a validation step.
-
-By default this calls the step function.
-* **batch**: A batch of val data received from the val loader.
-* **batch_idx**: The index of the batch.
-
+*(no documentation found)*
 
 ---
-### *def* **forward**(*self*, *args, **kwargs)
+### *def* **test_step**(*self*, batch, batch_idx)
 
-Proxy to self.model.
-
-Arguments get passed unchanged.
-
+*(no documentation found)*
 
 ---
-### *def* **step**(*self*, feature, target, batch_idx)
+### *def* **trainval_step**(*self*, feature, target, batch_idx)
 
-Implementation of a supervised training step.
+*(no documentation found)*
 
-The output of the model will be directly given to the loss without modification.
+---
+### *def* **forward**(*self*, *feature)
 
-* **feature**: A namedtuple from the dataloader that will be given to the forward as ordered parameters.
-* **target**: A namedtuple from the dataloader that will be given to the loss.
-* **returns**: The loss.
-
+*(no documentation found)*
 
 ---
 ### *def* **setup**(*self*, stage=None)
 
-This function is for setting up the training.
-
-The default implementation calls the load_dataset function and
-stores the result in self.train_data and self.val_data.
-(It is called once per process.)
-
+*(no documentation found)*
 
 ---
 ### *def* **train_dataloader**(*self*)
 
-Create a training dataloader.
-
-The default implementation wraps self.train_data in a Dataloader.
-
+*(no documentation found)*
 
 ---
 ### *def* **val_dataloader**(*self*)
 
-Create a validation dataloader.
-
-The default implementation wraps self.val_data in a Dataloader.
-
+*(no documentation found)*
 
 ---
-### *def* **log_resources**(*self*, gpus_separately=False)
+### *def* **test_dataloader**(*self*)
 
-Log the cpu, ram and gpu usage.
-
-
----
-### *def* **log_fps**(*self*)
-
-Log the FPS that is achieved.
-
+*(no documentation found)*
 
 ---
 ### *def* **train**(*self*, mode=True)
 
-Set the experiment to training mode and val mode.
+*(no documentation found)*
 
-This is done automatically. You will not need this usually.
+---
+### *def* **load_checkpoint**(*self*, checkpoint: str = None)
+
+Load a checkpoint.
+Either find one or use the path provided.
 
 

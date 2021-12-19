@@ -13,7 +13,7 @@
 
 Create a loss.
 
-* **parent**: The parent is required for logging.
+* **parent**: The parent is required for logging. Parent must be of type Loss or Experiment.
 
 
 ---
