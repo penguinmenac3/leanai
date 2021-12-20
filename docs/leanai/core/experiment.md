@@ -71,11 +71,6 @@ This is required, if you execute the code from within the backup in the checkpoi
 
 
 ---
-### *def* **configure_gradient_clipping**(*self*, optimizer: Optimizer, optimizer_idx: int, gradient_clip_val: Optional[Union[int, float]] = None, gradient_clip_algorithm: Optional[str] = None)
-
-*(no documentation found)*
-
----
 ### *def* **run_training**
 
 Run the training loop of the experiment.

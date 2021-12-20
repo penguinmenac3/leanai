@@ -25,6 +25,7 @@ Example:
 import torch
 from torch.optim import SGD
 
+from leanai.core.config import DictLike
 from leanai.core.experiment import Experiment, set_seeds
 from leanai.data.datasets import FashionMNISTDataset
 from leanai.training.losses import SparseCrossEntropyLossFromLogits
@@ -76,14 +77,14 @@ Lastly, do not forget to specify your `batch_size` and `epochs`, which are techn
 Example:
 ```python
 experiment.run_training(
-    load_dataset=dict(
+    load_dataset=DictLike(
         type=FashionMNISTDataset,
         data_path="outputs",
     ),
-    build_loss=dict(
+    build_loss=DictLike(
         type=SparseCrossEntropyLossFromLogits,
     ),
-    build_optimizer=dict(
+    build_optimizer=DictLike(
         type=SGD,
         lr=1e-3,
     ),
@@ -112,8 +113,6 @@ LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
 
 ```
 
-> **Note**: Unfortunately the progress bar does not work properly in jupyter notebooks.
-
 ## Wrap-Up
 
 That is it for the tutorial. You might want to have a look at tensorboard though. Here you go.
@@ -122,11 +121,5 @@ Example:
 ```python
 %load_ext tensorboard
 %tensorboard --logdir outputs
-```
-Output:
-```
-The tensorboard extension is already loaded. To reload it, use:
-  %reload_ext tensorboard
-
 ```
 

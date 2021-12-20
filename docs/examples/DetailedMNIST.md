@@ -163,8 +163,8 @@ from leanai.training.losses import SparseCrossEntropyLossFromLogits, Loss
 
 
 class MyLoss(Loss):
-    def __init__(self, parent: Experiment):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
         self.loss = SparseCrossEntropyLossFromLogits()
 
     def forward(self, y_pred, y_true):
@@ -181,6 +181,7 @@ Example:
 ```python
 import torch
 from torch.optim import SGD
+from leanai.core.config import DictLike
 from leanai.core.experiment import Experiment, set_seeds
 
 
@@ -191,14 +192,14 @@ experiment = Experiment(
     example_input=torch.zeros((2, 28, 28, 1), dtype=torch.float32),
 )
 experiment.run_training(
-    load_dataset=dict(
+    load_dataset=DictLike(
         type=FashionMNISTDataset,
         data_path="outputs",
     ),
-    build_loss=dict(
+    build_loss=DictLike(
         type=MyLoss
     ),
-    build_optimizer=dict(
+    build_optimizer=DictLike(
         type=SGD,
         lr=1e-3,
     ),
@@ -226,8 +227,6 @@ LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
 0.034     Total estimated model params size (MB)
 
 ```
-
-> **Note**: Unfortunately the progress bar does not work properly in jupyter notebooks.
 
 ## Wrap-Up
 

@@ -29,7 +29,7 @@ Compute the multiloss using the provided losses.
 
 
 ---
-### *def* **MultiLossV2**(parent, **losses) -> SumLoss
+### *def* **MultiLossV2**(**losses) -> SumLoss
 
 Normalizes the losses by variance estimation and then sums them.
 

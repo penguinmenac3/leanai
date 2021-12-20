@@ -170,6 +170,8 @@ parser or consider using and inheriting from the SimpleDataset.
 
 * **file_provider_iterable**: The iterable file provider providing samples to the parser.
 * **parser**: The parser converting samples into a usable format.
+:transformers: Transformers that are applied on the dataset to convert the format to what the model requires. (Default: [])
+:test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
 
 
 ---
@@ -187,6 +189,8 @@ parser or consider using and inheriting from the SimpleDataset.
 
 * **file_provider_sequence**: The sequence file provider providing samples to the parser.
 * **parser**: The parser converting samples into a usable format.
+:transformers: Transformers that are applied on the dataset to convert the format to what the model requires. (Default: [])
+:test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
 
 
 ---
@@ -217,6 +221,8 @@ If that is not the case, your code may break somewhere.
 * **InputType**: A definition of a named tuple that defines the input of the neural network.
 * **OutputType**: A definition of a named tuple that defines the output of the neural network.
 * **ignore_file_not_found**: If a file is missing return None instead of an exception.  (Default: False).
+:transformers: Transformers that are applied on the dataset to convert the format to what the model requires. (Default: [])
+:test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
 
 
 ---
