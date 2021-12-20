@@ -45,6 +45,7 @@ Here is the simplest mnist example, it is so short it can be part of the main re
 import torch
 from torch.optim import SGD
 
+from leanai.core.config import DictLike
 from leanai.core.experiment import Experiment, set_seeds
 from leanai.data.datasets import FashionMNISTDataset
 from leanai.training.losses import SparseCrossEntropyLossFromLogits
@@ -57,14 +58,14 @@ experiment = Experiment(
     output_path="outputs",
 )
 experiment.run_training(
-    load_dataset=dict(
+    load_dataset=DictLike(
         type=FashionMNISTDataset,
         data_path="outputs",
     ),
-    build_loss=dict(
+    build_loss=DictLike(
         type=SparseCrossEntropyLossFromLogits,
     ),
-    build_optimizer=dict(
+    build_optimizer=DictLike(
         type=SGD,
         lr=1e-3,
     ),
