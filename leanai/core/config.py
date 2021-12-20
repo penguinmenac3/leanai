@@ -76,9 +76,7 @@ class DictLike(dict):
             constructor = self["type"]
             params = dict(**self)
             del params["type"]
-            if len(args) == 0 and len(kwds) == 0:
-                return constructor(**params)
-            else:
-                return constructor(*args, **kwds)
+            params.update(kwds)
+            return constructor(*args, **params)
         else:
             raise AttributeError(f"Not callable as no type is availible: {self}")
