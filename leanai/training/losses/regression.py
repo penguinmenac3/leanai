@@ -11,13 +11,13 @@ from leanai.training.losses.loss import Loss
 
 @register_loss()
 class SmoothL1Loss(Loss):
-    def __init__(self, reduction: str = "mean", parent=None):
+    def __init__(self, reduction: str = "mean"):
         """
         Compute a smooth l1 loss.
         
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.loss_fun = _SmoothL1Loss(reduction=reduction)
         
     def forward(self, y_pred, y_true):
@@ -32,13 +32,13 @@ class SmoothL1Loss(Loss):
 
 @register_loss()
 class MSELoss(Loss):
-    def __init__(self, reduction: str = "mean", parent=None):
+    def __init__(self, reduction: str = "mean"):
         """
         Compute a mse loss.
         
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.loss_fun = _MSELoss(reduction=reduction)
         
     def forward(self, y_pred, y_true):

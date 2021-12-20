@@ -180,6 +180,7 @@ class Experiment(pl.LightningModule):
         self._build_optimizer = build_optimizer
         self._num_workers = num_dataloader_threads
         self.loss = build_loss()
+        loss._active_experiment = self
         gpus = int(_env_defaults(gpus, "SLURM_GPUS", 1))
         nodes = int(_env_defaults(nodes, "SLURM_NODES", 1))
         trainer = pl.Trainer(
@@ -290,7 +291,7 @@ class Experiment(pl.LightningModule):
         if not self._testing:
             self.train_data = self._load_dataset(split=SPLIT_TRAIN)
             self.val_data = self._load_dataset(split=SPLIT_VAL)
-            else:
+        else:
             self.test_data = self._load_dataset()
 
     def train_dataloader(self):

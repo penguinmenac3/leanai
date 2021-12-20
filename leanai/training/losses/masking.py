@@ -9,11 +9,11 @@ from leanai.training.loss_registry import register_loss, build_loss
 
 
 class MaskedLoss(Loss):
-    def __init__(self, loss, keep_dim=1, parent=None):
+    def __init__(self, loss, keep_dim=1):
         """
         """
-        super().__init__(parent=parent)
-        self.wrapped_loss = build_loss(loss, self)
+        super().__init__()
+        self.wrapped_loss = build_loss(loss)
         self.keep_dim = keep_dim
 
     def forward(self, y_pred, y_true):
@@ -60,10 +60,10 @@ class MaskedLoss(Loss):
 
 @register_loss()
 class NegMaskedLoss(MaskedLoss):
-    def __init__(self, loss, keep_dim=1, parent=None):
+    def __init__(self, loss, keep_dim=1):
         """
         """
-        super().__init__(loss=loss, keep_dim=keep_dim, parent=parent)
+        super().__init__(loss=loss, keep_dim=keep_dim)
     
     def masking_fun(self, tensor):
         return tensor >= 0
@@ -71,10 +71,10 @@ class NegMaskedLoss(MaskedLoss):
 
 @register_loss()
 class ValueMaskedLoss(MaskedLoss):
-    def __init__(self, loss, ignore_value, keep_dim=1, parent=None):
+    def __init__(self, loss, ignore_value, keep_dim=1):
         """
         """
-        super().__init__(loss=loss, keep_dim=keep_dim, parent=parent)
+        super().__init__(loss=loss, keep_dim=keep_dim)
         self.ignore_value = ignore_value
 
     def masking_fun(self, tensor):
@@ -83,10 +83,10 @@ class ValueMaskedLoss(MaskedLoss):
 
 @register_loss()
 class NaNMaskedLoss(MaskedLoss):
-    def __init__(self, loss, keep_dim=1, parent=None):
+    def __init__(self, loss, keep_dim=1):
         """
         """
-        super().__init__(loss=loss, keep_dim=keep_dim, parent=parent)
+        super().__init__(loss=loss, keep_dim=keep_dim)
 
     def masking_fun(self, tensor):
         return ~tensor.isnan()

@@ -35,7 +35,7 @@ def equal_number_sampler(fg, bg, best_indices):
 @register_loss()
 class DetectionLoss(Loss):
     def __init__(
-        self, parent,
+        self,
         pred_anchors="anchors",
         pred_boxes="raw_boxes",
         pred_class_ids="raw_class_ids",
@@ -59,7 +59,7 @@ class DetectionLoss(Loss):
 
         :param anchors: The key of the anchors in the predictions.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.pred_anchors = pred_anchors
         self.pred_boxes = pred_boxes
         self.pred_class_ids = pred_class_ids

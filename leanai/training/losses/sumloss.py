@@ -10,16 +10,16 @@ from leanai.training.loss_registry import build_loss, register_loss
 
 @register_loss()
 class SumLoss(Loss):
-    def __init__(self, parent, **losses):
+    def __init__(self, **losses):
         """
         Compute the sum on the given losses.
 
         :param **losses: Provide the losses you want to have fused as named parameters to the constructor. Losses get applied to y_pred and y_true, then logged to tensorboard and finally fused.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.losses = losses
         for k, v in losses.items():
-            self.add_module(k, build_loss(v, self))
+            self.add_module(k, build_loss(v))
 
     def forward(self, y_pred, y_true):
         """
@@ -38,18 +38,18 @@ class SumLoss(Loss):
 
 @register_loss()
 class WeightedSumLoss(Loss):
-    def __init__(self, parent, weights: Dict[str, float], **losses):
+    def __init__(self, weights: Dict[str, float], **losses):
         """
         Compute the weighted sum on the given losses.
 
         :param weights: The weights for the losses (the keys must match the keys of **losses).
         :param **losses: Provide the losses you want to have fused as named parameters to the constructor. Losses get applied to y_pred and y_true, then logged to tensorboard and finally fused.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.losses = losses
         self.weights = weights
         for k, v in losses.items():
-            self.add_module(k, build_loss(v, self))
+            self.add_module(k, build_loss(v))
 
     def forward(self, y_pred, y_true):
         """

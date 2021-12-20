@@ -12,7 +12,7 @@ from leanai.training.loss_registry import register_loss
 
 @register_loss()
 class SparseCrossEntropyLossFromLogits(Loss):
-    def __init__(self, reduction: str = "mean", parent=None):
+    def __init__(self, reduction: str = "mean"):
         """
         Compute a sparse cross entropy.
         
@@ -20,7 +20,7 @@ class SparseCrossEntropyLossFromLogits(Loss):
         
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.loss_fun = CrossEntropyLoss(reduction=reduction)
         
     def forward(self, y_pred, y_true):
@@ -42,7 +42,7 @@ class SparseCrossEntropyLossFromLogits(Loss):
 
 @register_loss()
 class BinaryCrossEntropyLossFromLogits(Loss):
-    def __init__(self, reduction: str = "mean", parent=None):
+    def __init__(self, reduction: str = "mean"):
         """
         Compute a binary cross entropy.
         
@@ -50,7 +50,7 @@ class BinaryCrossEntropyLossFromLogits(Loss):
 
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.loss_fun = BCEWithLogitsLoss(reduction=reduction)
 
     def forward(self, y_pred, y_true):
@@ -69,7 +69,7 @@ class BinaryCrossEntropyLossFromLogits(Loss):
 
 @register_loss()
 class SparseCategoricalAccuracy(Loss):
-    def __init__(self, reduction: str = "mean", axis=-1, parent=None):
+    def __init__(self, reduction: str = "mean", axis=-1):
         """
         Compute the sparse mean squared error.
         
@@ -77,7 +77,7 @@ class SparseCategoricalAccuracy(Loss):
         
         :param reduction: Specifies the reduction to apply to the output: `'none'` | `'mean'` | `'sum'`. `'none'`: no reduction will be applied, `'mean'`: the sum of the output will be divided by the number of elements in the output, `'sum'`: the output will be summed. Default: 'mean'.
         """
-        super().__init__(parent=parent)
+        super().__init__()
         self.reduction = reduction
         self.axis = axis
 
