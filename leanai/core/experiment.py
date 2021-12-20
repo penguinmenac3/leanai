@@ -21,7 +21,7 @@ from pytorch_lightning.utilities import move_data_to_device
 from leanai.core.config import DictLike
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
-from leanai.core.logging import warn, info, set_logger, get_timestamp
+from leanai.core.logging import debug, warn, info, set_logger, get_timestamp
 from leanai.data.dataloader import DataLoader
 from leanai.training.losses.loss import Loss
 
@@ -123,8 +123,10 @@ class Experiment(pl.LightningModule):
         self.config = config
         self._InputType = InputType
         if example_input is not None:
+            debug("Initializing model")
             self.example_input_array = example_input
             self._run_model_on_example(example_input)
+            debug("Model initialized")
         self._meta_data_logging = meta_data_logging
         set_logger(os.path.join(output_path, version), log_code=True)
 
@@ -209,6 +211,8 @@ class Experiment(pl.LightningModule):
             resume_from_checkpoint=self._find_checkpoint(checkpoint),
             accelerator="ddp" if gpus > 1 else None
         )
+        debug("Experiment before trainer.fit(self)")
+        debug(self)
         return trainer.fit(self)
 
     def run_inference(
@@ -251,6 +255,8 @@ class Experiment(pl.LightningModule):
             ),
             accelerator="ddp" if gpus > 1 else None
         )
+        debug("Experiment before trainer.test(self)")
+        debug(self)
         return trainer.test(self)
 
     # **********************************************

@@ -205,6 +205,7 @@ def set_logger(log_folder: str, log_code: bool = True) -> None:
             for data in __log_buffer:
                 f.write(data + "\n")
 
+    debug(f"Initializing logger (log_code={log_code})")
     _set_logfile(os.path.join(log_folder, "log.txt"))
     _create_log_folder()
     _flush_log_buffer()
@@ -213,6 +214,7 @@ def set_logger(log_folder: str, log_code: bool = True) -> None:
     if log_code:
         _log_code(os.path.join(log_folder, "src_{}".format(get_timestamp())))
     log_progress(goal="waiting", progress=0, score=0)
+    debug("Logger initialized")
 
 
 def close(reason: str = None) -> None:
