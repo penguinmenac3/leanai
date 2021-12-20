@@ -23,7 +23,7 @@ from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
 from leanai.core.logging import debug, warn, info, set_logger, get_timestamp
 from leanai.data.dataloader import DataLoader
-from leanai.training.losses.loss import Loss
+import leanai.training.losses.loss as loss
 
 
 def set_seeds():
@@ -136,9 +136,6 @@ class Experiment(pl.LightningModule):
         self._load_dataset = None
         self._build_optimizer = None
 
-    def configure_gradient_clipping(self, optimizer: Optimizer, optimizer_idx: int, gradient_clip_val: Optional[Union[int, float]] = None, gradient_clip_algorithm: Optional[str] = None):
-        return super().configure_gradient_clipping(optimizer, optimizer_idx, gradient_clip_val=gradient_clip_val, gradient_clip_algorithm=gradient_clip_algorithm)
-
     def _run_model_on_example(self, example_input):
         if isinstance(example_input, Tensor):
             example_input = (example_input,)
@@ -147,12 +144,6 @@ class Experiment(pl.LightningModule):
             self.model(self._InputType(*inp))
         else:
             self.model(*inp)
-
-    def _dict_to_callable(self, spec):
-        params = dict(**spec)
-        constructor = params["type"]
-        del params["type"]
-        return constructor, params
 
     def run_training(
         self,
@@ -188,14 +179,7 @@ class Experiment(pl.LightningModule):
         self._load_dataset = load_dataset
         self._build_optimizer = build_optimizer
         self._num_workers = num_dataloader_threads
-        if isinstance(build_loss, dict):
-            constructor, params = self._dict_to_callable(build_loss)
-            if isinstance(constructor, Loss.__class__):
-                self.loss = constructor(parent=self, **params)
-            else:
-                self.loss = constructor(**params)
-        else:
-            self.loss = build_loss(self)
+        self.loss = build_loss()
         gpus = int(_env_defaults(gpus, "SLURM_GPUS", 1))
         nodes = int(_env_defaults(nodes, "SLURM_NODES", 1))
         trainer = pl.Trainer(
@@ -263,11 +247,7 @@ class Experiment(pl.LightningModule):
     # Configure training
     # **********************************************
     def configure_optimizers(self):
-        if isinstance(self._build_optimizer, dict):
-            constructor, params = self._dict_to_callable(self._build_optimizer)
-            return constructor(self.parameters(), **params)
-        else:
-            return self._build_optimizer(self)
+        return self._build_optimizer(self.parameters())
 
     # **********************************************
     # Steping through the model
@@ -308,19 +288,10 @@ class Experiment(pl.LightningModule):
     # **********************************************
     def setup(self, stage=None):
         if not self._testing:
-            if isinstance(self._load_dataset, dict):
-                fun, params = self._dict_to_callable(self._load_dataset)
-                self.train_data = fun(split=SPLIT_TRAIN, **params)
-                self.val_data = fun(split=SPLIT_VAL, **params)
+            self.train_data = self._load_dataset(split=SPLIT_TRAIN)
+            self.val_data = self._load_dataset(split=SPLIT_VAL)
             else:
-                self.train_data = self._load_dataset(self, SPLIT_TRAIN)
-                self.val_data = self._load_dataset(self, SPLIT_VAL)
-        else:
-            if isinstance(self._load_dataset, dict):
-                fun, params = self._dict_to_callable(self._load_dataset)
-                self.test_data = fun(**params)
-            else:
-                self.test_data = self._load_dataset(self)
+            self.test_data = self._load_dataset()
 
     def train_dataloader(self):
         shuffle = True
