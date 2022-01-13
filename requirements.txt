@@ -10,3 +10,4 @@ opencv-contrib-python
 matplotlib
 torchviz
 torchsummary
+webdataset
