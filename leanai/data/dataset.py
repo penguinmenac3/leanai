@@ -159,7 +159,6 @@ class CommonDataset(object):
         """
         A common base implementation from which all datasets inherit.
         """
-        super().__init__()
         self._file_provider = file_provider_iterable
         self._fp_iterator = None
         self._parser = parser
