@@ -4,8 +4,8 @@
 > An implementation of a dataset for the casia webfaces.
 """
 import numpy as np
-from leanai.data.datasets.images_in_classfolders_dataset import ImagesInClassfoldersDataset
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
+from .images_in_classfolders import ImagesInClassfoldersDataset
 
 
 class CasiaFacesDataset(ImagesInClassfoldersDataset):
