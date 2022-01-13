@@ -4,6 +4,7 @@
 > A collection of helpful annotations.
 """
 from abc import ABC, abstractmethod
+import os, json
 
 
 class _ClassDecorator(ABC):
@@ -43,3 +44,30 @@ class RunOnlyOnce(_ClassDecorator):
             return res
         else:
             return self.called[args[0]]
+
+
+class JSONFileCache(_ClassDecorator):
+    def __init__(self, f):
+        """
+        Annotate a function in a class to use a json file to cache calls.
+        Instead of calling the function loads the data from the json if availible.
+
+        The caller must provide a `cache_path`, when calling the function.
+        `cache_path` must point at the path where the json is stored (e.g. `~/.cache/my_file.json`)
+        """
+        self.f = f
+    
+    def __call__(self, *args, cache_path=None, **kwargs):
+        if cache_path is None:
+            raise RuntimeError("When calling the function wrapped with JSONFileCache, you must provide a named argument: cache_path.")
+        if os.path.exists(cache_path):
+            with open(cache_path, "r") as f:
+                return json.loads(f.read())
+        else:
+            path = os.path.dirname(cache_path)
+            os.makedirs(path, exist_ok=True)
+            data = self.f(*args, **kwargs)
+            with open(cache_path, "w") as f:
+                f.write(json.dumps(data))
+            return data
+
