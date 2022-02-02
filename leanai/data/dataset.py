@@ -155,16 +155,16 @@ class ISequenceDataset(_Dataset):
 
 
 class CommonDataset(object):
-    def __init__(self, file_provider_iterable: FileProviderIterable, parser: IParser, transformers=[], test_mode=False) -> None:
+    def __init__(self, file_provider_iterable: FileProviderIterable, parser: IParser, transforms=[], test_mode=False) -> None:
         """
         A common base implementation from which all datasets inherit.
         """
         self._file_provider = file_provider_iterable
         self._fp_iterator = None
         self._parser = parser
-        self.transformers = []
-        for transformer in transformers:
-            self.transformers.append(transformer(test_mode=test_mode))
+        self.transforms = []
+        for transform in transforms:
+            self.transforms.append(transform(test_mode=test_mode))
 
     def _process(self, sample: Dict[str, DataPromise]) -> Any:
         sample = self._parser(sample)
@@ -181,7 +181,7 @@ class CommonDataset(object):
         :param sample: A sample as provided by the parser (what your dataset returns if no preprocess or transformers are provided).
         :return: A sample in the format as the algorithm needs it.
         """
-        for transformer in self.transformers:
+        for transformer in self.transforms:
             sample = transformer(sample)
         return sample
     
@@ -220,7 +220,7 @@ class IterableDataset(CommonDataset, IIterableDataset):
 
 
 class SequenceDataset(CommonDataset, ISequenceDataset):
-    def __init__(self, file_provider_sequence: FileProviderSequence, parser: IParser, transformers=[], test_mode=False) -> None:
+    def __init__(self, file_provider_sequence: FileProviderSequence, parser: IParser, transforms=[], test_mode=False) -> None:
         """
         An implementation of the ISequenceDataset using fileprovider and parser.
 
@@ -233,10 +233,10 @@ class SequenceDataset(CommonDataset, ISequenceDataset):
 
         :param file_provider_sequence: The sequence file provider providing samples to the parser.
         :param parser: The parser converting samples into a usable format.
-        :transformers: Transformers that are applied on the dataset to convert the format to what the model requires. (Default: [])
-        :test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
+        :param transforms: Transforms that are applied on the dataset to convert the format to what the model requires. (Default: [])
+        :param test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
         """
-        super().__init__(file_provider_sequence, parser, transformers=transformers, test_mode=test_mode)
+        super().__init__(file_provider_sequence, parser, transforms=transforms, test_mode=test_mode)
         self._file_provider = file_provider_sequence
 
     def __getitem__(self, index) -> Any:
@@ -244,7 +244,7 @@ class SequenceDataset(CommonDataset, ISequenceDataset):
         return self._process(sample)
 
 class SimpleDataset(Parser, SequenceDataset):
-    def __init__(self, InputType, OutputType, ignore_file_not_found=False, transformers=[], test_mode=False) -> None:
+    def __init__(self, InputType, OutputType, ignore_file_not_found=False, transforms=[], test_mode=False) -> None:
         """
         SimpleDataset decodes the samples required to populate the input and output type automatically.
 
@@ -270,11 +270,11 @@ class SimpleDataset(Parser, SequenceDataset):
         :param InputType: A definition of a named tuple that defines the input of the neural network.
         :param OutputType: A definition of a named tuple that defines the output of the neural network.
         :param ignore_file_not_found: If a file is missing return None instead of an exception.  (Default: False).
-        :transformers: Transformers that are applied on the dataset to convert the format to what the model requires. (Default: [])
-        :test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
+        :param transforms: Transforms that are applied on the dataset to convert the format to what the model requires. (Default: [])
+        :param test_mode: A parameter that is passed to the constructor of the transformers (Default: False).
         """
         Parser.__init__(self, InputType, OutputType, ignore_file_not_found=ignore_file_not_found)
-        SequenceDataset.__init__(self, [], self, transformers=transformers, test_mode=test_mode)
+        SequenceDataset.__init__(self, [], self, transforms=transforms, test_mode=test_mode)
 
     def set_sample_tokens(self, sample_tokens: List[Any]) -> None:
         """

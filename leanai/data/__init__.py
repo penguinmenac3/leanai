@@ -3,7 +3,7 @@ from leanai.data.dataset import IIterableDataset, ISequenceDataset, IterableData
 from leanai.data.file_provider import FileProviderIterable, FileProviderSequence
 from leanai.data.parser import IParser, Parser
 from leanai.data.serializer import ISerializer
-from leanai.data.transformer import Transformer
+from leanai.data.transform import Transform
 
 
 __all__ = [
@@ -12,5 +12,5 @@ __all__ = [
     "FileProviderIterable", "FileProviderSequence",
     "IParser", "Parser",
     "ISerializer",
-    "Transformer",
+    "Transform",
 ]
