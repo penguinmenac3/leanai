@@ -11,3 +11,4 @@ matplotlib
 torchviz
 torchsummary
 webdataset
+nuscenes-devkit
