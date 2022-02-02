@@ -3,18 +3,14 @@
 
 > An implementation of the kitti object detection dataset.
 """
-from typing import Any, Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple
 import os
-import json
 import cv2
 import numpy as np
-import math
-from collections import defaultdict
 from tqdm import tqdm
 
 from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
-from leanai.core.logging import warn
 from leanai.data.dataset import SimpleDataset
 from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
 from .kitti_object_splits import TRAIN_SPLIT, VAL_SPLIT
@@ -35,18 +31,26 @@ class KittiOutputType(NamedTuple):
 
 
 class KittiDataset(SimpleDataset):
-    def __init__(self, split: str, data_path: str, DatasetInput=KittiInputType, DatasetOutput=KittiOutputType, anno_cache=None) -> None:
+    def __init__(
+        self,
+        split: str, data_path: str,
+        DatasetInput=KittiInputType, DatasetOutput=KittiOutputType,
+        anno_cache=None, transforms=[]
+    ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
 
-        The getitem is preimplemented, so it fills the values of DatasetInput and DatasetOutput with the available getters.
+        The getitem is preimplemented, so it fills the values of DatasetInput
+        and DatasetOutput with the available getters.
         :param split: The split (train/val) that should be loaded.
         :param data_path: An absolute path where to find the data.
-        :param DatasetInput: The type that should be filled for inputs using the getters.
-        :param DatasetOutput: The type that should be filled for outputs using the getters.
-        :param anno_cache: Optionally provide a path where annotations should be cached.
+        :param DatasetInput: Type that is filled for inputs using getters.
+        :param DatasetOutput: Type that is filled for outputs using getters.
+        :param anno_cache: (Optional) Path where annotations should be cached.
+        :param transforms: Transforms that are applied on the dataset to convert
+            the format to what the model requires. (Default: [])
         """
-        super().__init__(DatasetInput, DatasetOutput)
+        super().__init__(DatasetInput, DatasetOutput, transforms=transforms)
         if split == SPLIT_TEST:
             self.data_path = os.path.join(data_path,"testing")
         else:
@@ -95,7 +99,8 @@ class KittiDataset(SimpleDataset):
         }
         """
         annotations = {}
-        for fname in tqdm(os.listdir(self._get_anno_folder()), desc="Loading annotations"):
+        files = os.listdir(self._get_anno_folder())
+        for fname in tqdm(files, desc="Loading annotations"):
             with open(os.path.join(self._get_anno_folder(), fname), "r") as f:
                 label_2 = f.read().split("\n")
             with open(os.path.join(self._get_calib_folder(), fname), "r") as f:
@@ -123,7 +128,8 @@ class KittiDataset(SimpleDataset):
     def get_sample_tokens(self) -> List[str]:
         """
         Get a list of all valid sample tokens.
-        Uses the filenames of images on disk and checks if they are valid sample tokens.
+        
+        Use filenames of images on disk and checks if they are valid tokens.
         """
         all_images = os.listdir(self._get_image_folder())
         all_images = [x.replace(".png", "") for x in all_images]
@@ -132,13 +138,15 @@ class KittiDataset(SimpleDataset):
     def get_image(self, sample_token: str) -> np.ndarray:
         """
         Load the image corresponding to a sample token.
+        :return: An array of shape (h, w, 3) encoded RGB.
         """
-        image = cv2.imread(os.path.join(self._get_image_folder(), sample_token + ".png"))
+        fname = os.path.join(self._get_image_folder(), sample_token + ".png")
+        image = cv2.imread(fname)
         return np.copy(image[:,:,::-1])
 
     def get_class_ids(self, sample_token: str) -> List[str]:
         """
-        Get the class ids of all objects in a frame corresponding to a sample token.
+        Get class ids of all objects in a frame corresponding to a sample token.
         """
         return [
             anno[0]
@@ -174,7 +182,7 @@ class KittiDataset(SimpleDataset):
 
     def get_boxes_2d(self, sample_token: str) -> np.ndarray:
         """
-        Get the 2d bounding boxes of all objects in a frame corresponding to a sample token.
+        Get 2d BBoxes of all objects in a frame corresponding to a sample token.
 
         Uses the center-size representation, e.g.:
         [
@@ -194,7 +202,7 @@ class KittiDataset(SimpleDataset):
 
     def get_boxes_3d(self, sample_token: str) -> np.ndarray:
         """
-        Get the 3d bounding boxes of all objects in a frame corresponding to a sample token.
+        Get 3d BBoxes of all objects in a frame corresponding to a sample token.
         The box is converted to the coordinate system:
         * x = right
         * y = down
@@ -222,14 +230,16 @@ class KittiDataset(SimpleDataset):
         Get the lidar scan as a pointcloud of shape (N, 4).
         Each scan is a Nx4 array of [x,y,z,reflectance].
         """
-        velodyne_path = os.path.join(self.data_path, "velodyne", sample_token + ".bin")
+        velodyne_path = os.path.join(
+            self.data_path, "velodyne", sample_token + ".bin"
+        )
         scan = np.fromfile(velodyne_path, dtype=np.float32)
         scan = scan.reshape((-1, 4))
         return scan
 
     def get_projection(self, sample_token: str) -> np.ndarray:
         """
-        Get a (3,4) projection matrix from the camera coordinates to image coordinates.
+        Get (3,4) projection matrix from camera coordinates to image coordinates.
         """
         calib = self.annotation_dict[sample_token]["calib"]
         # Skip col 1 and use row 2
@@ -237,7 +247,8 @@ class KittiDataset(SimpleDataset):
 
     def get_lidar_to_cam(self, sample_token: str) -> np.ndarray:
         """
-        Get a (4,4) lidar to cam transform matrix (Rt), that already considers the image rectification in kitti.
+        Get (4,4) lidar to cam transform matrix (Rt), that already considers
+        the image rectification in kitti.
         """
         calib = self.annotation_dict[sample_token]["calib"]
         # Skip col 1 and use row 4, 5 for projection rect and velo_to_cam
@@ -254,7 +265,9 @@ def _test_kitti_visualization(data_path):
     import matplotlib.pyplot as plt
     dataset = KittiDataset(SPLIT_TRAIN, data_path)
     inputs, target = dataset[0]
-    image = plot_boxes_on_image(inputs.image, target.boxes_2d, titles=target.class_ids)
+    image = plot_boxes_on_image(
+        inputs.image, target.boxes_2d, titles=target.class_ids
+    )
     plt.figure(figsize=(18,6))
     plt.imshow(image)
     plt.show()
@@ -262,5 +275,8 @@ def _test_kitti_visualization(data_path):
 
 if __name__ == "__main__":
     import sys
-    data_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.environ["DATA_PATH"], "kitti_object")
+    if len(sys.argv) > 1:
+        data_path = sys.argv[1]
+    else:
+        data_path = os.path.join(os.environ["DATA_PATH"], "kitti_object")
     _test_kitti_visualization(data_path)
