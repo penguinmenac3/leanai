@@ -26,16 +26,16 @@ from leanai.data.dataloader import DataLoader
 import leanai.training.losses.loss as loss
 
 
-def set_seeds():
+def set_seeds(seed=0):
     """
     Sets the seeds of torch, numpy and random for reproducability.
     """
     import torch
-    torch.manual_seed(0)
+    torch.manual_seed(seed)
     import numpy as np
-    np.random.seed(0)
+    np.random.seed(seed)
     import random
-    random.seed(0)
+    random.seed(seed)
 
 
 def _env_defaults(value, env, default):
@@ -194,7 +194,7 @@ class Experiment(pl.LightningModule):
                 #default_hp_metric=False
             ),
             resume_from_checkpoint=self._find_checkpoint(checkpoint),
-            accelerator="ddp" if gpus > 1 else None
+            strategy="ddp" if gpus > 1 or nodes > 1 else None
         )
         debug("Experiment before trainer.fit(self)")
         debug(self)
@@ -238,7 +238,7 @@ class Experiment(pl.LightningModule):
                 log_graph=hasattr(self, "example_input_array") and self.example_input_array is not None,
                 default_hp_metric=False
             ),
-            accelerator="ddp" if gpus > 1 else None
+            strategy="ddp" if gpus > 1 or nodes > 1 else None
         )
         debug("Experiment before trainer.test(self)")
         debug(self)
