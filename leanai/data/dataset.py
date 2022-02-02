@@ -99,6 +99,7 @@ from typing import Any, Dict, Iterator, List
 from torch.utils.data import IterableDataset as _IterableDataset
 from torch.utils.data import Dataset as _Dataset
 
+from ..core.config import DictLike
 from .parser import IParser, Parser
 from .file_provider import FileProviderSequence, FileProviderIterable
 from .data_promise import DataPromise
@@ -283,3 +284,56 @@ class SimpleDataset(Parser, SequenceDataset):
         :param sample_tokens: A list of all sample tokens of the dataset.
         """
         self._file_provider = list(sample_tokens)
+
+
+class MultiDataset(ISequenceDataset):
+    def __init__(self, *args, datasets=[], transforms=[], test_mode=False, **kwargs) -> None:
+        """
+        :param datasets: A list of datasets or DictLike objects that should be
+            merged into a single dataset.
+        :param transforms: Transforms that are applied on the dataset to convert
+            the format to what the model requires. (Default: [])
+        :param test_mode: Determines if transforms should be preparing data for
+            the testmode. Is also added to kwargs to give it to children.
+        :param *args: Other positional parameters will be passed to all child
+            datasets constructed from DictLike (ignored for non DictLike).
+        :param *kwargs: Other keyword parameters will be passed to all child
+            datasets constructed from DictLike (ignored for non DictLike).
+        """
+        super().__init__()
+        self._fp_iterator = None
+        self.transforms = []
+        self.datasets = []
+        self.indices = []
+        kwargs["test_mode"] = test_mode
+        
+        # Initialize datasets and internal datastructures
+        for dataset_idx, dataset in enumerate(datasets):
+            if isinstance(dataset, DictLike):
+                dataset = dataset(*args, **kwargs)
+            self.datasets.append(dataset)
+            for sample_idx in len(dataset):
+                self.indices.append((dataset_idx, sample_idx))
+
+        for transform in transforms:
+            self.transforms.append(transform(test_mode=test_mode))
+
+    def __getitem__(self, index) -> Any:
+        dataset_idx, sample_idx = self.indices[index]
+        sample = self.datasets[dataset_idx][sample_idx]
+        for transformer in self.transforms:
+            sample = transformer(sample)
+        return sample
+    
+    def __next__(self) -> Any:
+        if self._fp_iterator is None:
+            raise RuntimeError("You must first call iter(...) before you can use next(...).")
+        idx = self._fp_iterator.__next__()
+        return self.__getitem__(idx)
+
+    def __iter__(self) -> Iterator[Any]:
+        self._fp_iterator = range(len(self)).__iter__()
+        return self
+
+    def __len__(self) -> int:
+        return len(self.indices)
