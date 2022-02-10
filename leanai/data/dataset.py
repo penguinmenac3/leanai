@@ -312,7 +312,7 @@ class MultiDataset(ISequenceDataset):
             if isinstance(dataset, DictLike):
                 dataset = dataset(*args, **kwargs)
             self.datasets.append(dataset)
-            for sample_idx in len(dataset):
+            for sample_idx in range(len(dataset)):
                 self.indices.append((dataset_idx, sample_idx))
 
         for transform in transforms:

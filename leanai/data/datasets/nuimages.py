@@ -36,7 +36,7 @@ class NuimDataset(SimpleDataset):
         self,
         split: str, data_path: str, version: str = "v1.0-mini",
         DatasetInput=NuimInputType, DatasetOutput=NuimOutputType,
-        anno_cache: str = None, transforms=[]
+        anno_cache: str = None, transforms=[], test_mode=True
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -53,8 +53,12 @@ class NuimDataset(SimpleDataset):
             Required for 2d bounding box support and instance seg support.
         :param transforms: Transforms that are applied on the dataset to convert
             the format to what the model requires. (Default: [])
+        :param test_mode: Passed to the constructor of transforms (Default: False).
         """
-        super().__init__(DatasetInput, DatasetOutput, transforms=transforms)
+        super().__init__(
+            DatasetInput, DatasetOutput,
+            transforms=transforms, test_mode=test_mode
+        )
         self.split = split
         self.data_path = data_path
         self.nuim = NuImages(

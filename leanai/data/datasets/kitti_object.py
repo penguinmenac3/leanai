@@ -35,7 +35,7 @@ class KittiDataset(SimpleDataset):
         self,
         split: str, data_path: str,
         DatasetInput=KittiInputType, DatasetOutput=KittiOutputType,
-        anno_cache=None, transforms=[]
+        anno_cache=None, transforms=[], test_mode=False
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -49,8 +49,12 @@ class KittiDataset(SimpleDataset):
         :param anno_cache: (Optional) Path where annotations should be cached.
         :param transforms: Transforms that are applied on the dataset to convert
             the format to what the model requires. (Default: [])
+        :param test_mode: Passed to the constructor of transforms (Default: False).
         """
-        super().__init__(DatasetInput, DatasetOutput, transforms=transforms)
+        super().__init__(
+            DatasetInput, DatasetOutput,
+            transforms=transforms, test_mode=test_mode
+        )
         if split == SPLIT_TEST:
             self.data_path = os.path.join(data_path,"testing")
         else:

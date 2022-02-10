@@ -51,7 +51,7 @@ class NuscDataset(SimpleDataset):
         self,
         split: str, data_path: str, version: str = "v1.0-mini",
         DatasetInput=NuscInputType, DatasetOutput=NuscOutputType,
-        anno_cache: str = None, transforms=[]
+        anno_cache: str = None, transforms=[], test_mode=False
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -66,8 +66,12 @@ class NuscDataset(SimpleDataset):
         :param anno_cache: (Optional) Path where annotations should be cached.
         :param transforms: Transforms that are applied on the dataset to convert
             the format to what the model requires. (Default: [])
+        :param test_mode: Passed to the constructor of transforms (Default: False).
         """
-        super().__init__(DatasetInput, DatasetOutput, transforms=transforms)
+        super().__init__(
+            DatasetInput, DatasetOutput,
+            transforms=transforms, test_mode=test_mode
+        )
         self.split = split
         self.data_path = data_path
         self.nusc = NuScenes(version=version, dataroot=data_path, verbose=False)
@@ -338,7 +342,8 @@ def _test_nusc_visualization(data_path):
     )
     inputs, target = dataset[0]
     image = inputs.images[0]
-    # TODO plot 3d boxes, helpers required for that.
+    # TODO nuscenes::_test_nusc_visualization
+    # plot 3d boxes, helpers required for that.
     plt.figure(figsize=(12,6))
     plt.imshow(image)
     plt.show()
