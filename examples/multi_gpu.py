@@ -6,6 +6,9 @@ from leanai.core.experiment import Experiment, set_seeds
 from leanai.data.datasets import FashionMNISTDataset
 from leanai.training.losses import SparseCrossEntropyLossFromLogits
 from leanai.model.configs.simple_classifier import buildSimpleClassifier
+from leanai.core import logging
+
+logging.DEBUG_VERBOSITY = logging.DEBUG_LEVEL_CORE
 
 set_seeds()
 experiment = Experiment(
