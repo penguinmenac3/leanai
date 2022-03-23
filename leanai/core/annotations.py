@@ -5,7 +5,7 @@
 """
 from abc import ABC, abstractmethod
 import os, json
-
+from leanai.core.logging import DEBUG_LEVEL_API, debug
 
 class _ClassDecorator(ABC):
     def __get__(self, obj, objtype):
@@ -61,13 +61,14 @@ class JSONFileCache(_ClassDecorator):
         if cache_path is None:
             raise RuntimeError("When calling the function wrapped with JSONFileCache, you must provide a named argument: cache_path.")
         if os.path.exists(cache_path):
+            debug(f"Using cache: {cache_path}", level=DEBUG_LEVEL_API)
             with open(cache_path, "r") as f:
                 return json.loads(f.read())
         else:
+            debug(f"Building cache: {cache_path}", level=DEBUG_LEVEL_API)
             path = os.path.dirname(cache_path)
             os.makedirs(path, exist_ok=True)
             data = self.f(*args, **kwargs)
             with open(cache_path, "w") as f:
                 f.write(json.dumps(data))
             return data
-

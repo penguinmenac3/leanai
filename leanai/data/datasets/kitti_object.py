@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
+from leanai.core.logging import DEBUG_LEVEL_API, info, debug, warn, error
 from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 from leanai.data.dataset import SimpleDataset
@@ -55,6 +56,7 @@ class KittiDataset(SimpleDataset):
             DatasetInput, DatasetOutput,
             transforms=transforms, test_mode=test_mode
         )
+        debug("Loading kitti_object.", level=DEBUG_LEVEL_API)
         if split == SPLIT_TEST:
             self.data_path = os.path.join(data_path,"testing")
         else:
@@ -64,6 +66,7 @@ class KittiDataset(SimpleDataset):
             anno_cache = self._get_default_anno_cache_path(split)
         self.annotation_dict = self._load_annotations(cache_path=anno_cache)
         self.set_sample_tokens(self.get_sample_tokens())
+        debug("Done loading kitti_object.", level=DEBUG_LEVEL_API)
 
     def _get_default_anno_cache_path(self, split):
         anno_split = "testing" if split == SPLIT_TEST else "training"

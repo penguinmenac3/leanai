@@ -14,6 +14,7 @@ from nuscenes.utils.data_classes import LidarPointCloud
 from nuscenes.utils.geometry_utils import transform_matrix
 from nuscenes.utils.splits import train, val, test, mini_train, mini_val
 
+from leanai.core.logging import DEBUG_LEVEL_API, info, debug, error, warn
 from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 from leanai.data.dataset import SimpleDataset
@@ -72,12 +73,15 @@ class NuscDataset(SimpleDataset):
             DatasetInput, DatasetOutput,
             transforms=transforms, test_mode=test_mode
         )
+        debug("Loading nuscenes.", level=DEBUG_LEVEL_API)
         self.split = split
+        self.version = version
         self.data_path = data_path
         self.nusc = NuScenes(version=version, dataroot=data_path, verbose=False)
         if anno_cache is None:
             anno_cache = self._get_default_anno_cache_path(split, version)
         self.set_sample_tokens(self.get_sample_tokens(cache_path=anno_cache))
+        debug("Done loading nuscenes.", level=DEBUG_LEVEL_API)
 
     def _get_default_anno_cache_path(self, split, version):
         return f"{os.environ['HOME']}/.cache/leanai/nusc_{version}_{split}.json"

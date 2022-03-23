@@ -19,6 +19,8 @@ from torch.utils.data._utils.collate import default_collate_err_msg_format
 from torch.utils.data import IterableDataset as _IterableDataset
 from torch._six import string_classes
 
+from leanai.core.logging import debug, DEBUG_LEVEL_API
+
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 
@@ -137,8 +139,10 @@ class DataLoader(Iterable):
         if device == "auto":
             if torch.cuda.is_available():
                 device = "cuda"
+                debug(f"Dataloader: Using cuda", level=DEBUG_LEVEL_API)
             else:
                 device = "cpu"
+                debug(f"Dataloader: Using cpu", level=DEBUG_LEVEL_API)
         self.device = device
         if isinstance(dataset, _IterableDataset):
             shuffle = False

@@ -32,7 +32,7 @@ into namespaces separated by underscores (_).
 """
 from typing import Any
 
-from leanai.core.logging import debug
+from leanai.core.logging import DEBUG_LEVEL_CORE, debug
 
 
 class DictLike(dict):
@@ -79,7 +79,7 @@ class DictLike(dict):
             params = dict(**self)
             del params["type"]
             params.update(kwds)
-            debug(f"Calling DictLike(*{args}, **{params})")
+            debug(f"Calling DictLike(*{args}, **{params})", level=DEBUG_LEVEL_CORE)
             return constructor(*args, **params)
         else:
             raise AttributeError(f"Not callable as no type is availible: {self}")

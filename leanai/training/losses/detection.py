@@ -8,7 +8,7 @@ import torch
 import numpy as np
 from leanai.core import logging
 from leanai.core.annotations import RunOnlyOnce
-from leanai.core.logging import debug
+from leanai.core.logging import DEBUG_LEVEL_API, debug
 from leanai.training.losses.loss import Loss
 from leanai.training.losses.classification import SparseCrossEntropyLossFromLogits
 from leanai.training.losses.regression import SmoothL1Loss
@@ -190,11 +190,11 @@ class DetectionLoss(Loss):
             gather_targets.append(best_indices[fg] + targets_start)
             gather_targets.append(torch.zeros_like(torch.where(bg)[0]) - 1)    # for all bg insert -1
 
-            if logging.DEBUG_VERBOSITY:
-                debug("Matches")
-                debug("GTs: {}".format(targets.shape[1] - 2))
-                debug("Foreground: {}".format(fg.long().sum().numpy()))
-                debug("Ignore: {}".format(ignore.long().sum().numpy()))
-                debug("Background: {}".format(bg.long().sum().numpy()))
+            if logging.DEBUG_VERBOSITY >= DEBUG_LEVEL_API:
+                debug("Matches", level=DEBUG_LEVEL_API)
+                debug("GTs: {}".format(targets.shape[1] - 2), level=DEBUG_LEVEL_API)
+                debug("Foreground: {}".format(fg.long().sum().numpy()), level=DEBUG_LEVEL_API)
+                debug("Ignore: {}".format(ignore.long().sum().numpy()), level=DEBUG_LEVEL_API)
+                debug("Background: {}".format(bg.long().sum().numpy()), level=DEBUG_LEVEL_API)
 
         return torch.cat(gather_targets, 0), torch.cat(gather_preds, 0)

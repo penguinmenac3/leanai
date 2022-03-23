@@ -21,7 +21,7 @@ from pytorch_lightning.utilities import move_data_to_device
 from leanai.core.config import DictLike
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
 from leanai.core.tensorboard import TensorBoardLogger
-from leanai.core.logging import debug, warn, info, set_logger, get_timestamp
+from leanai.core.logging import DEBUG_LEVEL_CORE, debug, warn, info, set_logger, get_timestamp
 from leanai.data.dataloader import DataLoader
 import leanai.training.losses.loss as loss
 
@@ -123,10 +123,10 @@ class Experiment(pl.LightningModule):
         self.config = config
         self._InputType = InputType
         if example_input is not None:
-            debug("Initializing model")
+            debug("Initializing model", level=DEBUG_LEVEL_CORE)
             self.example_input_array = example_input
             self._run_model_on_example(example_input)
-            debug("Model initialized")
+            debug("Model initialized", level=DEBUG_LEVEL_CORE)
         self._meta_data_logging = meta_data_logging
         set_logger(os.path.join(output_path, version), log_code=True)
 
@@ -196,8 +196,8 @@ class Experiment(pl.LightningModule):
             resume_from_checkpoint=self._find_checkpoint(checkpoint),
             strategy="ddp" if gpus > 1 or nodes > 1 else None
         )
-        debug("Experiment before trainer.fit(self)")
-        debug(self)
+        debug("Experiment before trainer.fit(self)", level=DEBUG_LEVEL_CORE)
+        debug(self, level=DEBUG_LEVEL_CORE)
         return trainer.fit(self)
 
     def run_inference(
@@ -240,8 +240,8 @@ class Experiment(pl.LightningModule):
             ),
             strategy="ddp" if gpus > 1 or nodes > 1 else None
         )
-        debug("Experiment before trainer.test(self)")
-        debug(self)
+        debug("Experiment before trainer.test(self)", level=DEBUG_LEVEL_CORE)
+        debug(self, level=DEBUG_LEVEL_CORE)
         return trainer.test(self)
 
     # **********************************************

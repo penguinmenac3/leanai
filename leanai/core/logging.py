@@ -64,7 +64,11 @@ __last_progress = 0
 __last_update = time.time()
 
 
-DEBUG_VERBOSITY = False
+DEBUG_VERBOSITY = 0
+DEBUG_LEVEL_EXTERNAL = 1
+DEBUG_LEVEL_API = 10
+DEBUG_LEVEL_CORE = 20
+
 PRINT_STATUS = True
 PRINT_INFO = True
 PRINT_WARN = True
@@ -205,7 +209,7 @@ def set_logger(log_folder: str, log_code: bool = True) -> None:
             for data in __log_buffer:
                 f.write(data + "\n")
 
-    debug(f"Initializing logger (log_code={log_code})")
+    debug(f"Initializing logger (log_code={log_code})", level=DEBUG_LEVEL_CORE)
     _set_logfile(os.path.join(log_folder, "log.txt"))
     _create_log_folder()
     _flush_log_buffer()
@@ -214,7 +218,7 @@ def set_logger(log_folder: str, log_code: bool = True) -> None:
     if log_code:
         _log_code(os.path.join(log_folder, "src_{}".format(get_timestamp())))
     log_progress(goal="waiting", progress=0, score=0)
-    debug("Logger initialized")
+    debug("Logger initialized", level=DEBUG_LEVEL_CORE)
 
 
 def close(reason: str = None) -> None:
@@ -400,7 +404,7 @@ def warn(msg: str, end: str = "\n") -> None:
             __log_buffer.append(data)
 
 
-def debug(msg: str, end: str = "\n") -> None:
+def debug(msg: str, end: str = "\n", level=DEBUG_LEVEL_EXTERNAL) -> None:
     """
     Print something with a timestamp.
     Useful for logging.
@@ -409,7 +413,7 @@ def debug(msg: str, end: str = "\n") -> None:
     :param msg: The message to print.
     :param end: The line ending. Defaults to "\n" but can be set to "" to not have a linebreak.
     """
-    if DEBUG_VERBOSITY:
+    if DEBUG_VERBOSITY >= level:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] DEBUG {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
