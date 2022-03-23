@@ -3,6 +3,7 @@
 
 > An implementation of a detection loss.
 """
+from leanai.core.config import DictLike
 from leanai.core.indexed_tensor_helpers import sliced_per_batch
 import torch
 import numpy as np
@@ -14,7 +15,6 @@ from leanai.training.losses.classification import SparseCrossEntropyLossFromLogi
 from leanai.training.losses.regression import SmoothL1Loss
 from leanai.training.losses.iou_box_2d import similarity_iou_2d
 from leanai.training.losses.masking import NaNMaskedLoss, NegMaskedLoss
-from leanai.training.loss_registry import build_loss, register_loss
 
 
 def _keep_n_random_trues(arr, num_keep):
@@ -32,7 +32,6 @@ def equal_number_sampler(fg, bg, best_indices):
     return fg, bg
 
 
-@register_loss()
 class DetectionLoss(Loss):
     def __init__(
         self,
@@ -67,9 +66,9 @@ class DetectionLoss(Loss):
         self.target_boxes = target_boxes
         self.target_class_ids = target_class_ids
         self.target_indices = target_indices
-        self.class_loss = build_loss(class_loss)
-        self.center_loss = build_loss(center_loss)
-        self.size_loss = build_loss(size_loss)
+        self.class_loss = DictLike.try_build(class_loss)
+        self.center_loss = DictLike.try_build(center_loss)
+        self.size_loss = DictLike.try_build(size_loss)
         self.delta_preds = delta_preds
         self.log_delta_preds = log_delta_preds
 

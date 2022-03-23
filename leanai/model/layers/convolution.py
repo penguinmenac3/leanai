@@ -8,12 +8,10 @@ from torch.nn import Module
 from torch.nn import Conv1d as _Conv1d
 from typing import Optional, Any, Tuple
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import register_module
 
 
-@register_module()
 class Conv1D(Module):
-    def __init__(self, filters: int, kernel_size: int, padding: Optional[str] = None, stride: int = 1, dilation_rate: int = 1, kernel_initializer: Optional[Any] = None, activation=None):
+    def __init__(self, filters: int, kernel_size: int, padding: Optional[str] = None, stride: int = 1, dilation_rate: int = 1, kernel_initializer: Optional[Any] = None, activation=None, **kwargs):
         """
         A 1d convolution layer.
     
@@ -33,6 +31,7 @@ class Conv1D(Module):
         self.stride = stride
         self.kernel_initializer = kernel_initializer
         self.activation = activation
+        self.kwargs = kwargs
         
     @RunOnlyOnce
     def build(self, features):
@@ -46,7 +45,7 @@ class Conv1D(Module):
         else:
             raise NotImplementedError("Padding {} is not implemented.".format(self.padding))
         in_channels = features.shape[1]
-        self.conv = _Conv1d(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation)
+        self.conv = _Conv1d(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation, **self.kwargs)
         self.conv.weight.data = self.kernel_initializer(self.conv.weight.data)
         if torch.cuda.is_available():
             self.conv = self.conv.to(torch.device(features.device))
@@ -59,9 +58,8 @@ class Conv1D(Module):
         return result
 
 
-@register_module()
 class Conv2D(Module):
-    def __init__(self, filters: int, kernel_size: Tuple[int, int], padding: Optional[str] = None, strides: Tuple[int, int] = (1, 1), dilation_rate: Tuple[int, int] = (1, 1), kernel_initializer: Optional[Any] = None, activation=None):
+    def __init__(self, filters: int, kernel_size: Tuple[int, int], padding: Optional[str] = None, strides: Tuple[int, int] = (1, 1), dilation_rate: Tuple[int, int] = (1, 1), kernel_initializer: Optional[Any] = None, activation=None, **kwargs):
         """
         A 2d convolution layer.
     
@@ -81,6 +79,7 @@ class Conv2D(Module):
         self.stride = strides
         self.kernel_initializer = kernel_initializer
         self.activation = activation
+        self.kwargs = kwargs
         
     @RunOnlyOnce
     def build(self, features):
@@ -98,7 +97,7 @@ class Conv2D(Module):
         else:
             raise NotImplementedError("Padding {} is not implemented.".format(self.padding))
         in_channels = features.shape[1]
-        self.conv = _Conv2d(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation)
+        self.conv = _Conv2d(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation, **self.kwargs)
         self.conv.weight.data = self.kernel_initializer(self.conv.weight.data)
         if torch.cuda.is_available():
             self.conv = self.conv.to(torch.device(features.device))

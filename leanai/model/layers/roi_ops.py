@@ -7,10 +7,8 @@ import torch
 from torch.nn import Module
 from torchvision.ops import roi_pool as _roi_pool
 from torchvision.ops import roi_align as _roi_align
-from leanai.model.module_registry import register_module
 
 
-@register_module()
 class BoxToRoi(Module):
     def __init__(self, feature_map_scale=1) -> None:
         super().__init__()
@@ -24,7 +22,6 @@ class BoxToRoi(Module):
         return corners / self.feature_map_scale
 
 
-@register_module()
 class RoiPool(Module):
     def __init__(self, output_size, spatial_scale=1.0):
         """
@@ -54,7 +51,6 @@ class RoiPool(Module):
         return result.view(-1, C * self.output_size[0]* self.output_size[1])
 
 
-@register_module()
 class RoiAlign(Module):
     def __init__(self, output_size, spatial_scale=1.0):
         """

@@ -4,8 +4,8 @@
 > Masking losses can be made easy by putting nans or negative values in the ground truth.
 """
 import torch
+from leanai.core.config import DictLike
 from leanai.training.losses.loss import Loss
-from leanai.training.loss_registry import register_loss, build_loss
 
 
 class MaskedLoss(Loss):
@@ -13,7 +13,7 @@ class MaskedLoss(Loss):
         """
         """
         super().__init__()
-        self.wrapped_loss = build_loss(loss)
+        self.wrapped_loss = DictLike.try_build(loss)
         self.keep_dim = keep_dim
 
     def forward(self, y_pred, y_true):
@@ -58,7 +58,6 @@ class MaskedLoss(Loss):
         raise RuntimeError("Must be implemented by subclass or set during runtime.")
 
 
-@register_loss()
 class NegMaskedLoss(MaskedLoss):
     def __init__(self, loss, keep_dim=1):
         """
@@ -69,7 +68,6 @@ class NegMaskedLoss(MaskedLoss):
         return tensor >= 0
 
 
-@register_loss()
 class ValueMaskedLoss(MaskedLoss):
     def __init__(self, loss, ignore_value, keep_dim=1):
         """
@@ -81,7 +79,6 @@ class ValueMaskedLoss(MaskedLoss):
         return tensor != self.ignore_value
 
 
-@register_loss()
 class NaNMaskedLoss(MaskedLoss):
     def __init__(self, loss, keep_dim=1):
         """

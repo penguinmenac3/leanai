@@ -7,10 +7,8 @@ import torch
 from torch.nn import BatchNorm1d, BatchNorm2d, BatchNorm3d
 from torch.nn import Module
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import register_module
 
 
-@register_module()
 class BatchNormalization(Module):
     def __init__(self):
         """

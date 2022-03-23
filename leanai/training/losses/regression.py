@@ -5,11 +5,9 @@
 """
 from torch.nn import SmoothL1Loss as _SmoothL1Loss
 from torch.nn import MSELoss as _MSELoss
-from leanai.training.loss_registry import register_loss
 from leanai.training.losses.loss import Loss
 
 
-@register_loss()
 class SmoothL1Loss(Loss):
     def __init__(self, reduction: str = "mean"):
         """
@@ -30,7 +28,6 @@ class SmoothL1Loss(Loss):
         return self.loss_fun(y_pred, y_true)
 
 
-@register_loss()
 class MSELoss(Loss):
     def __init__(self, reduction: str = "mean"):
         """

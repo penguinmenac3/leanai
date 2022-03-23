@@ -5,12 +5,11 @@
 """
 import torch
 from torch.nn import Parameter
+from leanai.core.config import DictLike
 from leanai.training.losses.loss import Loss
 from leanai.training.losses.sumloss import SumLoss
-from leanai.training.loss_registry import build_loss, register_loss
 
 
-@register_loss()
 class NormalizedLoss(Loss):
     def __init__(self, loss, name = None, initial_sigma=1):
         """
@@ -22,7 +21,7 @@ class NormalizedLoss(Loss):
         :param initial_sigma: The initial sigma values.
         """
         super().__init__()
-        self._loss = build_loss(loss)
+        self._loss = DictLike.try_build(loss)
         self.name = name
         self.sigma = Parameter(torch.tensor(initial_sigma, dtype=torch.float32, requires_grad=True), requires_grad=True)
 
@@ -41,7 +40,6 @@ class NormalizedLoss(Loss):
         return loss + torch.log(self.sigma**2 + 1)
 
 
-@register_loss()
 def MultiLossV2(**losses) -> SumLoss:
     """
     Normalizes the losses by variance estimation and then sums them.
@@ -49,4 +47,4 @@ def MultiLossV2(**losses) -> SumLoss:
     :param parent: The parent for the loss.
     :param **losses: Provide the losses you want to have fused as named parameters to the constructor. Losses get applied to y_pred and y_true, then logged to tensorboard and finally fused.
     """
-    return SumLoss(**{k: NormalizedLoss(build_loss(v), name=k) for k, v in losses.items()})
+    return SumLoss(**{k: NormalizedLoss(DictLike.try_build(v), name=k) for k, v in losses.items()})

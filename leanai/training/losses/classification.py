@@ -7,10 +7,8 @@ from torch import Tensor
 from torch.nn import CrossEntropyLoss
 from torch.nn import BCEWithLogitsLoss
 from leanai.training.losses.loss import Loss
-from leanai.training.loss_registry import register_loss
 
 
-@register_loss()
 class SparseCrossEntropyLossFromLogits(Loss):
     def __init__(self, reduction: str = "mean"):
         """
@@ -40,7 +38,6 @@ class SparseCrossEntropyLossFromLogits(Loss):
         return self.loss_fun(y_pred, y_true)
 
 
-@register_loss()
 class BinaryCrossEntropyLossFromLogits(Loss):
     def __init__(self, reduction: str = "mean"):
         """
@@ -67,7 +64,6 @@ class BinaryCrossEntropyLossFromLogits(Loss):
         return self.loss_fun(y_pred, y_true)
 
 
-@register_loss()
 class SparseCategoricalAccuracy(Loss):
     def __init__(self, reduction: str = "mean", axis=-1):
         """

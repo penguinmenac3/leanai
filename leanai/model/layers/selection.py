@@ -9,10 +9,8 @@ import torch
 from torch import Tensor
 from torch.nn import Module
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import register_module
 
 
-@register_module()
 class Gather(Module):
     def __init__(self, axis):
         """
@@ -59,7 +57,6 @@ class Gather(Module):
         return torch.stack([torch.index_select(input_tensor[i], batchless_axis, indices[i]) for i in range(self.batch_size)])
 
 
-@register_module()
 class TopKIndices(Module):
     def __init__(self, k):
         """
@@ -80,7 +77,6 @@ class TopKIndices(Module):
         return torch.topk(input_tensor, self.k).indices
 
 
-@register_module()
 class GatherTopKIndices(Module):
     def __init__(self, k: int, background_class_idx: int = 0):
         """
@@ -109,7 +105,6 @@ class GatherTopKIndices(Module):
         return self.gather(input_tensor, indices), self.gather(scores, indices)
 
 
-@register_module()
 class GatherTopKIndicesOnIndexed(Module):
     def __init__(self, k: int, background_class_idx: int = 0):
         """

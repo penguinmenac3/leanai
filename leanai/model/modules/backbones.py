@@ -11,10 +11,8 @@ from torch.nn import Sequential
 
 from leanai.core.annotations import RunOnlyOnce
 from leanai.model.layers import ImageConversion
-from leanai.model.module_registry import MODULES
 
 
-@MODULES.register()
 class ImageNetBackbone(Module):
     def __init__(self, encoder_type, only_encoder=True, pretrained=True, last_layer=None, standardize=True, to_channel_first=True, input_field_name="image"):
         """

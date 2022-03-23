@@ -4,10 +4,8 @@
 > Reshape a tensor.
 """
 from torch.nn import Module
-from leanai.model.module_registry import register_module
 
 
-@register_module()
 class Reshape(Module):
     def __init__(self, output_shape):
         """

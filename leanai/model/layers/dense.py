@@ -6,10 +6,8 @@
 import torch
 from torch.nn import Module
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import register_module
 
-@register_module("FullyConnected")
-@register_module()
+
 class Dense(Module):
     def __init__(self, out_features: int, activation=None):
         """

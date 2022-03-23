@@ -4,10 +4,8 @@ from torch.nn import Module
 
 from leanai.core.annotations import RunOnlyOnce
 from leanai.model.layers import Dense, Conv2D
-from leanai.model.module_registry import MODULES
 
 
-@MODULES.register()
 class SimpleClassifierHead(Module):
     def __init__(self, num_classes, activation="softmax"):
         """

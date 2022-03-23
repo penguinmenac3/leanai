@@ -4,11 +4,10 @@
 > An implementation of collector losses like sum, weighted sum, etc.
 """
 from typing import Dict
+from leanai.core.config import DictLike
 from leanai.training.losses.loss import Loss
-from leanai.training.loss_registry import build_loss, register_loss
 
 
-@register_loss()
 class SumLoss(Loss):
     def __init__(self, **losses):
         """
@@ -19,7 +18,7 @@ class SumLoss(Loss):
         super().__init__()
         self.losses = losses
         for k, v in losses.items():
-            self.add_module(k, build_loss(v))
+            self.add_module(k, DictLike.try_build(v))
 
     def forward(self, y_pred, y_true):
         """
@@ -36,7 +35,6 @@ class SumLoss(Loss):
         return total_loss
 
 
-@register_loss()
 class WeightedSumLoss(Loss):
     def __init__(self, weights: Dict[str, float], **losses):
         """
@@ -49,7 +47,7 @@ class WeightedSumLoss(Loss):
         self.losses = losses
         self.weights = weights
         for k, v in losses.items():
-            self.add_module(k, build_loss(v))
+            self.add_module(k, DictLike.try_build(v))
 
     def forward(self, y_pred, y_true):
         """

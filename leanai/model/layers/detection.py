@@ -12,7 +12,7 @@ from torch import Tensor
 from torch.nn import Module
 from torchvision.ops import nms
 from leanai.core.annotations import RunOnlyOnce
-from leanai.model.module_registry import build_module, register_module
+from leanai.core.config import DictLike
 from leanai.model.layers.selection import GatherTopKIndicesOnIndexed
 from leanai.model.layers.dense import Dense
 
@@ -23,7 +23,6 @@ DetectionOutput = namedtuple("DetectionOutput", [
 ])
 
 
-@register_module()
 class DenseDetectionHead(Module):
     def __init__(self, anchor_generator, vectorize_anchors, vectorize_features, detection_head, deltas_to_boxes, filter_preds=None):
         """
@@ -39,12 +38,12 @@ class DenseDetectionHead(Module):
         :param filter_preds: (Optional) Filter the predicted boxes for further usage (e.g. FilterBoxes2D).
         """
         super().__init__()
-        self.anchor_generator = build_module(anchor_generator)
-        self.vectorize_anchors = build_module(vectorize_anchors)
-        self.vectorize_features = build_module(vectorize_features)
-        self.detection_head = build_module(detection_head)
-        self.deltas_to_boxes = build_module(deltas_to_boxes)
-        self.filter_preds = build_module(filter_preds) if filter_preds is not None else None
+        self.anchor_generator = DictLike.try_build(anchor_generator)
+        self.vectorize_anchors = DictLike.try_build(vectorize_anchors)
+        self.vectorize_features = DictLike.try_build(vectorize_features)
+        self.detection_head = DictLike.try_build(detection_head)
+        self.deltas_to_boxes = DictLike.try_build(deltas_to_boxes)
+        self.filter_preds = DictLike.try_build(filter_preds) if filter_preds is not None else None
 
     def forward(self, inputs, features):
         anchors = self.anchor_generator(features)
@@ -62,7 +61,6 @@ class DenseDetectionHead(Module):
         )
 
 
-@register_module()
 class ROIDetectionHead(Module):
     def __init__(self, box_to_roi, roi_op, detection_head, deltas_to_boxes, filter_preds=None, inject_rois=None):
         """
@@ -78,11 +76,11 @@ class ROIDetectionHead(Module):
         :param inject_rois: (Optional) The names for the attributes in the input used for injecting rois: dict(roi="name_in_input", roi_indices="name_in_input").
         """
         super().__init__()
-        self.box_to_roi = build_module(box_to_roi)
-        self.roi_op = build_module(roi_op)
-        self.detection_head = build_module(detection_head)
-        self.deltas_to_boxes = build_module(deltas_to_boxes)
-        self.filter_preds = build_module(filter_preds) if filter_preds is not None else None
+        self.box_to_roi = DictLike.try_build(box_to_roi)
+        self.roi_op = DictLike.try_build(roi_op)
+        self.detection_head = DictLike.try_build(detection_head)
+        self.deltas_to_boxes = DictLike.try_build(deltas_to_boxes)
+        self.filter_preds = DictLike.try_build(filter_preds) if filter_preds is not None else None
         self.inject_rois = inject_rois
 
     def forward(self, inputs, features, detections):
@@ -105,7 +103,6 @@ class ROIDetectionHead(Module):
         )
 
 
-@register_module()
 class FilterBoxes2D(Module):
     def __init__(self, clip_to_image=True, min_size=[30, 30], k_pre_nms=12000, k_post_nms=2000, score_tresh=0.05):
         """
@@ -152,7 +149,6 @@ class FilterBoxes2D(Module):
         return boxes, class_ids, indices
 
 
-@register_module()
 class DetectionHead(Module):
     def __init__(self, num_classes: int, dim: int = 2, num_anchors: int = 9):
         """
@@ -206,7 +202,6 @@ class DetectionHead(Module):
         return self._forward_boxes(features), self._forward_class_ids(features), self._forward_batch_indices(batch_indices)
 
 
-@register_module()
 class DeltasToBoxes(Module):
     def __init__(self, log_deltas=True, dimensionality=2) -> None:
         super().__init__()
@@ -230,7 +225,6 @@ class DeltasToBoxes(Module):
         return boxes
 
 
-@register_module()
 class GridAnchorGenerator(Module):
     def __init__(self, ratios, scales, feature_map_scale, height=-1, width=-1, base_size=256):
         """
@@ -301,7 +295,6 @@ class GridAnchorGenerator(Module):
         return self.anchors
 
 
-@register_module()
 class ClipBox2DToImage(Module):
     def __init__(self, image_size: Tuple[int, int]) -> None:
         super().__init__()
@@ -330,7 +323,6 @@ class ClipBox2DToImage(Module):
         return boxes
 
 
-@register_module()
 class FilterSmallBoxes2D(Module):
     def __init__(self, min_size: List[float]) -> None:
         super().__init__()
@@ -344,7 +336,6 @@ class FilterSmallBoxes2D(Module):
         return tuple(results)
 
 
-@register_module()
 class FilterLowScores(Module):
     def __init__(self, tresh, background_class_idx: int = 0) -> None:
         super().__init__()
@@ -359,7 +350,6 @@ class FilterLowScores(Module):
         return tuple(results)
 
 
-@register_module()
 class NMS(Module):
     def __init__(self, tresh: float) -> None:
         super().__init__()
