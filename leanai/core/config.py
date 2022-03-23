@@ -83,3 +83,23 @@ class DictLike(dict):
             return constructor(*args, **params)
         else:
             raise AttributeError(f"Not callable as no type is availible: {self}")
+
+    @staticmethod
+    def from_dict(obj, ignore_non_dict=False):
+        if isinstance(obj, dict):
+            return DictLike(**{
+                k: DictLike.from_dict(v, ignore_non_dict=True)
+                for k, v in obj.items()
+            })
+        else:
+            if ignore_non_dict:
+                return obj
+            else:
+                raise TypeError(f"DictLike.from_dict expected a dict as input type but got {type(obj)}.")
+
+    @staticmethod
+    def try_build(obj):
+        if isinstance(obj, DictLike):
+            return obj()
+        else:
+            return obj
