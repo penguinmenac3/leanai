@@ -20,7 +20,7 @@ def _pickle_file_path(cache_path: str, split: str, idx: int):
 
 
 class PickledDataset(SequenceDataset):
-    def __init__(self, split: str, cache_path: str, shuffle: bool):
+    def __init__(self, split: str, cache_path: str, shuffle: bool, transforms=[], test_mode=False):
         """
         Create a dataset from previously pickled examples.
 
@@ -33,6 +33,8 @@ class PickledDataset(SequenceDataset):
         super().__init__(
             file_provider_sequence=_PickleFileProvider(split, cache_path, shuffle),
             parser=_PickleFileParser(),
+            transforms=transforms,
+            test_mode=test_mode,
         )
 
     @staticmethod

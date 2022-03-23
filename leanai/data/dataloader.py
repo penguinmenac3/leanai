@@ -116,6 +116,8 @@ def _named_tuple_to_device(x, device):
     for k, v in dict(x._asdict()).items():
         if isinstance(v, torch.Tensor):
             result[k] = v.to(device)
+        elif hasattr(v, "_asdict"):
+            result[k] = _named_tuple_to_device(v, device)
         else:
             result[k] = v
     result = type(x)(**result)
