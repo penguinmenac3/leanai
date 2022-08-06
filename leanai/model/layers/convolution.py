@@ -88,15 +88,20 @@ class Conv2D(Module):
         if self.kernel_initializer is None:
             from torch.nn.init import orthogonal_
             self.kernel_initializer = orthogonal_
+        if isinstance(self.kernel_size, int):
+            self.kernel_size = (self.kernel_size, self.kernel_size)
         if self.padding == "same" or self.padding is None:
             px = int((self.kernel_size[0] - 1) / 2)
             py = int((self.kernel_size[1] - 1) / 2)
             self.padding = (px, py)
         elif self.padding == "none":
             self.padding = (0, 0)
+        elif isinstance(self.padding, int):
+            self.padding = (self.padding, self.padding)
         else:
             raise NotImplementedError("Padding {} is not implemented.".format(self.padding))
         in_channels = features.shape[1]
+        #print(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation, self.kwargs)
         self.conv = _Conv2d(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation, **self.kwargs)
         self.conv.weight.data = self.kernel_initializer(self.conv.weight.data)
         if torch.cuda.is_available():
