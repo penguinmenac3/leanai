@@ -10,16 +10,24 @@ from leanai.core.capture_tensors import CaptureNamespace, capture
 
 
 class Sequential(nn.Module):
-    def __init__(self, layers: List[Union[nn.Module, DictLike]]):
+    def __init__(self, layers: List[Union[nn.Module, DictLike]]=[], **kwarglayers):
         super().__init__()
-        self.layers = [DictLike.try_build(l) for l in layers if l is not None]
-        for idx, l in enumerate(self.layers):
-            self.add_module(f"{idx}", l)
+        self.layers = {}
+        for idx, layer in enumerate(layers):
+            if layer is None: continue
+            layer = DictLike.try_build(layer)
+            self.layers[f"{idx}"] = layer
+            self.add_module(f"{idx}", layer)
+        for name, layer in kwarglayers.items():
+            if layer is None: continue
+            layer = DictLike.try_build(layer)
+            self.layers[name] = layer
+            self.add_module(name, layer)
 
     def forward(self, inputs: Tensor) -> Tensor:
         x = inputs
-        for idx, l in enumerate(self.layers):
-            with CaptureNamespace(f"{idx}"):
-                x = l(x)
-            capture(f"{idx}", x)
+        for name, layer in self.layers.items():
+            with CaptureNamespace(name):
+                x = layer(x)
+            capture(name, x)
         return x
