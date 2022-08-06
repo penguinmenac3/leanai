@@ -142,6 +142,13 @@ class KittiDataset(SimpleDataset):
         all_images = [x.replace(".png", "") for x in all_images]
         return list(filter(self.is_valid_sample_token, all_images))
 
+    def get_sample_token(self, sample_token: str) -> str:
+        """
+        Get the sample_token that uniquely identifies a frame.
+        :return: The same string as was input.
+        """
+        return sample_token
+
     def get_image(self, sample_token: str) -> np.ndarray:
         """
         Load the image corresponding to a sample token.

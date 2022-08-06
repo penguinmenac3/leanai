@@ -137,6 +137,13 @@ class NuscDataset(SimpleDataset):
         image = cv2.imread(os.path.join(self.data_path, cam_data["filename"]))
         return np.copy(image[:,:,::-1])
 
+    def get_sample_token(self, sample_token: str) -> str:
+        """
+        Get the sample_token that uniquely identifies a frame.
+        :return: The same string as was input.
+        """
+        return sample_token
+
     def get_image(self, sample_token: str) -> np.ndarray:
         """
         Get the image corresponding to a sample token for MAIN_CAM.
