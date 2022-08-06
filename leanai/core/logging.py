@@ -14,6 +14,7 @@ This package helps with logging while training and managing checkpoints (creatio
 import datetime
 import json
 import os
+import sys
 import shutil
 import time
 import fnmatch
@@ -69,6 +70,7 @@ DEBUG_LEVEL_EXTERNAL = 1
 DEBUG_LEVEL_API = 10
 DEBUG_LEVEL_CORE = 20
 
+FILE_LOG_LEVEL = 0
 PRINT_STATUS = True
 PRINT_INFO = True
 PRINT_WARN = True
@@ -356,7 +358,8 @@ def status(msg: str, end: str = "\n") -> None:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] STAT {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
-        if end != "":
+        sys.stdout.flush()
+        if end != "" and FILE_LOG_LEVEL >= 0:
             if __logfile is not None:
                 with open(__logfile, "a") as f:
                     f.write(data + "\n")
@@ -377,11 +380,13 @@ def info(msg: str, end: str= "\n") -> None:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] INFO {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
-        if __logfile is not None:
-            with open(__logfile, "a") as f:
-                f.write(data + "\n")
-        else:
-            __log_buffer.append(data)
+        sys.stdout.flush()
+        if end != "" and FILE_LOG_LEVEL >= 0:
+            if __logfile is not None:
+                with open(__logfile, "a") as f:
+                    f.write(data + "\n")
+            else:
+                __log_buffer.append(data)
 
 
 def warn(msg: str, end: str = "\n") -> None:
@@ -397,11 +402,13 @@ def warn(msg: str, end: str = "\n") -> None:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] WARN {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
-        if __logfile is not None:
-            with open(__logfile, "a") as f:
-                f.write(data + "\n")
-        else:
-            __log_buffer.append(data)
+        sys.stdout.flush()
+        if end != "" and FILE_LOG_LEVEL >= 0:
+            if __logfile is not None:
+                with open(__logfile, "a") as f:
+                    f.write(data + "\n")
+            else:
+                __log_buffer.append(data)
 
 
 def debug(msg: str, end: str = "\n", level=DEBUG_LEVEL_EXTERNAL) -> None:
@@ -417,11 +424,13 @@ def debug(msg: str, end: str = "\n", level=DEBUG_LEVEL_EXTERNAL) -> None:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] DEBUG {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
-        if __logfile is not None:
-            with open(__logfile, "a") as f:
-                f.write(data + "\n")
-        else:
-            __log_buffer.append(data)
+        sys.stdout.flush()
+        if end != "" and FILE_LOG_LEVEL >= level:
+            if __logfile is not None:
+                with open(__logfile, "a") as f:
+                    f.write(data + "\n")
+            else:
+                __log_buffer.append(data)
 
 
 def error(msg: str, end: str = "\n") -> None:
@@ -437,8 +446,10 @@ def error(msg: str, end: str = "\n") -> None:
         time_stamp = __datetime.datetime.fromtimestamp(__time.time()).strftime('%Y-%m-%d %H:%M:%S')
         data = "[{}] ERROR {}".format(time_stamp, msg)
         print("\r{}".format(data), end=end)
-        if __logfile is not None:
-            with open(__logfile, "a") as f:
-                f.write(data + "\n")
-        else:
-            __log_buffer.append(data)
+        sys.stdout.flush()
+        if end != "" and FILE_LOG_LEVEL >= 0:
+            if __logfile is not None:
+                with open(__logfile, "a") as f:
+                    f.write(data + "\n")
+            else:
+                __log_buffer.append(data)
