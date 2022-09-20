@@ -3,7 +3,7 @@
 
 > An implementation of the nuimages dataset.
 """
-from typing import List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 import os
 import cv2
 import numpy as np
@@ -15,23 +15,18 @@ from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 from leanai.data.dataset import SimpleDataset
 from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
+from leanai.data.transforms.bounding_boxes import convert_xyxy_to_cxcywh
 
 
 class NuimInputType(NamedTuple):
-    images: List[np.ndarray]
+    image: np.ndarray
 
 class NuimOutputType(NamedTuple):
-    class_ids_2d: List[List[str]]
-    visibilities_2d: List[List[int]]
+    class_ids: List[List[str]]
+    #visibilities_2d: List[List[int]]
     boxes_2d: List[np.ndarray]
 
 class NuimDataset(SimpleDataset):
-    MAIN_CAM = "CAM_FRONT"
-    CAMERA_SENSORS = [
-        "CAM_FRONT","CAM_FRONT_RIGHT", "CAM_FRONT_LEFT",
-        "CAM_BACK", "CAM_BACK_LEFT", "CAM_BACK_RIGHT"
-    ]
-
     def __init__(
         self,
         split: str, data_path: str, version: str = "v1.0-mini",
@@ -60,6 +55,7 @@ class NuimDataset(SimpleDataset):
             transforms=transforms, test_mode=test_mode
         )
         self.split = split
+        self.version = version
         self.data_path = data_path
         self.nuim = NuImages(
             version=version, dataroot=data_path,
@@ -101,26 +97,16 @@ class NuimDataset(SimpleDataset):
         Get a list of all valid sample tokens.
         Uses filenames of images on disk and checks if they are valid sample tokens.
         """
-        all_tokens = []
-        sequences = self._get_split_sequences(split, version)
-        for scene in tqdm(self.nuim.scene, desc="Collecting tokens"):
-            if scene["name"] not in sequences: continue
-            sample_token = scene['first_sample_token']
-            sample = {"next": sample_token}
-            while sample_token != scene['last_sample_token']:
-                all_tokens.append(sample_token)
-                sample_token = sample["next"]
-                sample = self.nuim.get('sample', sample_token)
+        all_tokens = [x["key_camera_token"] for x in self.nuim.sample]
         return list(filter(self.is_valid_sample_token, all_tokens))
 
-    def _load_image_for_sensor(self, sample_token: str, sensor: str) -> np.ndarray:
+    def _load_image_for_sensor(self, sample_token: str) -> np.ndarray:
         """
-        Load the image corresponding to a sample token and sensor.
+        Load the image corresponding to a sample token.
         :return: An array of shape (h, w, 3) encoded RGB.
         """
-        sample = self.nuim.get('sample', sample_token)
-        cam_data = self.nuim.get('sample_data', sample['data'][sensor])
-        image = cv2.imread(os.path.join(self.data_path, cam_data["filename"]))
+        sample_data = self.nuim.get('sample_data', sample_token)
+        image = cv2.imread(os.path.join(self.data_path, sample_data['filename']))
         return np.copy(image[:,:,::-1])
 
     def get_image(self, sample_token: str) -> np.ndarray:
@@ -129,34 +115,28 @@ class NuimDataset(SimpleDataset):
         Use load_image_for_sensor to use more than just MAIN_CAM.
         :return: An array of shape (h, w, 3) encoded RGB.
         """
-        return self._load_image_for_sensor(sample_token, self.MAIN_CAM)
-
-    def get_images(self, sample_token: str) -> List[np.ndarray]:
-        """
-        Get a list of all images in order of cameras in `CAMERA_SENSORS`.
-        :return: List containing arrays of shape (h, w, 3) encoded RGB.
-        """
-        return [
-            self._load_image_for_sensor(sample_token, sensor)
-            for sensor in self.CAMERA_SENSORS
-        ]
+        return self._load_image_for_sensor(sample_token)
 
     def _get_anno_2d(self, sample_token):
         """
         Get the annotations for a frame from the nuscenes dataset as a list.
         """
-        self.nuim.list_sample_content(sample_token)
-        sample = self.nuim.get('sample', sample_token)
-        key_camera_token = sample['key_camera_token']
-        # Get object annotations for current frame.
-        object_anns = [
-            obj for obj in self.nuim.object_ann
-            if obj['sample_data_token'] == key_camera_token
-        ]
+        object_anns = [o for o in self.nuim.object_ann if o['sample_data_token'] == sample_token]
+        
+        anns = []
+        for ann in object_anns:
+            token = ann["token"]
+            category_token = ann['category_token']
+            category_name = self.nuim.get('category', category_token)['name']
+            bbox = ann['bbox']
+            attr_tokens = ann['attribute_tokens']
+            attributes = [self.nuim.get('attribute', at) for at in attr_tokens]
+            anns.append((token, category_name, bbox, attributes))
+
         # Sort by token to ensure that objects always appear in the
         # instance mask in the same order.
-        object_anns = sorted(object_anns, key=lambda k: k['token'])
-        return object_anns[1:]  # 0 is reserved for background
+        anns = sorted(anns, key=lambda k: k[0])
+        return anns
 
     def get_boxes_2d(self, sample_token: str) -> List[np.ndarray]:
         """
@@ -171,16 +151,15 @@ class NuimDataset(SimpleDataset):
         """
         boxes = []
         for anno in self._get_anno_2d(sample_token):
-            print(anno)
-            boxes.append(anno["translation"] + anno["size"])
-        return np.array(boxes, dtype=np.float32)
+            boxes.append(anno[2])
+        return convert_xyxy_to_cxcywh(np.array(boxes, dtype=np.float32))
 
-    def get_class_ids_2d(self, sample_token: str) -> List[List[str]]:
+    def get_class_ids(self, sample_token: str) -> List[List[str]]:
         """
         Get the class ids of all objects in a frame corresponding to a sample token.
         """
         return [
-            anno["category_name"]
+            anno[1]
             for anno in self._get_anno_2d(sample_token)
         ]
 
@@ -204,8 +183,8 @@ def _test_nuim_visualization(data_path):
         data_path=data_path,
     )
     inputs, target = dataset[0]
-    image = inputs.images[0]
-    image = plot_boxes_on_image(image, target.boxes_2d[0], titles=target.class_ids[0])
+    image = inputs.image
+    image = plot_boxes_on_image(image, target.boxes_2d, titles=target.class_ids)
     plt.figure(figsize=(12,6))
     plt.imshow(image)
     plt.show()
