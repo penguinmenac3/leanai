@@ -12,3 +12,4 @@ torchviz
 torchsummary
 webdataset
 nuscenes-devkit
+tf3d

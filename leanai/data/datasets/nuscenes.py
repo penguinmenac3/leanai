@@ -3,7 +3,7 @@
 
 > An implementation of the nuscenes dataset.
 """
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Tuple
 import os
 import cv2
 import numpy as np
@@ -18,6 +18,8 @@ from leanai.core.logging import DEBUG_LEVEL_API, info, debug, error, warn
 from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 from leanai.data.dataset import SimpleDataset
+from leanai.data.transforms.bounding_boxes import compute_corners, convert_xxyy_to_cxcywh, project_3d_box_to_2d
+from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
 
 
 class NuscInputType(NamedTuple):
@@ -33,6 +35,7 @@ class NuscOutputType(NamedTuple):
     class_ids: List[str]
     visibilities: List[int]
     boxes_3d: np.ndarray
+    boxes_2d: List[Tuple[np.ndarray, np.ndarray]]
 
 
 class NuscDataset(SimpleDataset):
@@ -342,8 +345,39 @@ class NuscDataset(SimpleDataset):
         """
         boxes = []
         for anno in self._get_anno(sample_token):
-            boxes.append(anno["translation"] + anno["size"] + anno["rotation"])
+            size = [anno["size"][1], anno["size"][0], anno["size"][2]]
+            boxes.append(anno["translation"] + size + anno["rotation"])
         return np.array(boxes, dtype=np.float32)
+    
+    def get_boxes_2d(self, sample_token: str) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """
+        Get the 2d bounding boxes of objects in the view of MAIN_CAM in a frame corresponding to a sample token.
+
+        Uses the center-size representation with rotation as a wxyz quaternion, e.g.:
+        [
+            [cx, cy, w, h],
+            [cx, cy, w, h],
+            ...
+        ]
+
+        Returns the boxes2d and the indices for the corresponding 3d annotations.
+        """
+        images = self.get_images(sample_token)
+        projections = self.get_projections(sample_token)
+        ego_to_cams = self.get_ego_to_cams(sample_token)
+        world_to_ego = self.get_world_to_ego(sample_token)
+        boxes_3d = self.get_boxes_3d(sample_token)
+
+        result = []
+        for image, projection, ego_to_cam in zip(images, projections, ego_to_cams):
+            world_to_cam = np.dot(ego_to_cam, world_to_ego)
+            full_projection = np.dot(projection, world_to_cam)
+            
+            corners = compute_corners(boxes_3d)
+            boxes_2d, indices = project_3d_box_to_2d(corners, full_projection, image.shape[1], image.shape[0])
+            boxes_2d = convert_xxyy_to_cxcywh(boxes_2d)
+            result.append((boxes_2d, indices))
+        return result
 
 
 def _test_nusc_visualization(data_path):
@@ -352,12 +386,13 @@ def _test_nusc_visualization(data_path):
         SPLIT_TRAIN, version="v1.0-mini", data_path=data_path
     )
     inputs, target = dataset[0]
-    image = inputs.images[0]
-    # TODO nuscenes::_test_nusc_visualization
-    # plot 3d boxes, helpers required for that.
-    plt.figure(figsize=(12,6))
-    plt.imshow(image)
-    plt.show()
+    for image, boxes_2d in zip(inputs.images, target.boxes_2d):
+        image = plot_boxes_on_image(
+            image, boxes_2d[0], titles=[target.class_ids[i] for i in boxes_2d[1]]
+        )
+        plt.figure(figsize=(12,6))
+        plt.imshow(image)
+        plt.show()
 
 
 if __name__ == "__main__":
