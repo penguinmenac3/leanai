@@ -98,8 +98,8 @@ class DictLike(dict):
                 raise TypeError(f"DictLike.from_dict expected a dict as input type but got {type(obj)}.")
 
     @staticmethod
-    def try_build(obj):
+    def try_build(obj, *args: Any, **kwds: Any):
         if isinstance(obj, DictLike):
-            return obj()
+            return obj(*args, **kwds)
         else:
             return obj
