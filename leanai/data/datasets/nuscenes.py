@@ -5,11 +5,11 @@
 """
 from typing import List, NamedTuple, Tuple
 import os
+import json
 import cv2
 import numpy as np
 from tqdm import tqdm
 from pyquaternion import Quaternion
-from nuscenes.nuscenes import NuScenes
 from nuscenes.utils.data_classes import LidarPointCloud
 from nuscenes.utils.geometry_utils import transform_matrix
 from nuscenes.utils.splits import train, val, test, mini_train, mini_val
@@ -77,14 +77,66 @@ class NuscDataset(SimpleDataset):
             transforms=transforms, test_mode=test_mode
         )
         debug("Loading nuscenes.", level=DEBUG_LEVEL_API)
+        anno_path = os.path.join(data_path, version)
+        if not os.path.exists(anno_path):
+            raise RuntimeError(f"Cannot find annotation path: {anno_path}")
         self.split = split
         self.version = version
         self.data_path = data_path
-        self.nusc = NuScenes(version=version, dataroot=data_path, verbose=False)
+        self.database = dict()
+        self._load_database()
+        self._build_shortcuts()
         if anno_cache is None:
             anno_cache = self._get_default_anno_cache_path(split, version)
         self.set_sample_tokens(self.get_sample_tokens(cache_path=anno_cache))
         debug("Done loading nuscenes.", level=DEBUG_LEVEL_API)
+
+    def _load_database(self):
+        def _load_table(table_name) -> dict:
+            with open(os.path.join(self.data_path, self.version, f'{table_name}.json')) as f:
+                return json.load(f)
+        self._token_to_index = {}
+        tables = [
+            'category', 'attribute', 'visibility', 'instance', 'sensor',
+            'calibrated_sensor', 'ego_pose', 'log', 'scene', 'sample',
+            'sample_data', 'sample_annotation', 'map', 'lidarseg', 'panoptic'
+        ]
+        for table in tables:
+            self.database[table] = _load_table(table)
+            self._token_to_index[table] = {
+                entry["token"]: idx
+                for idx, entry in enumerate(self.database[table])
+            }
+
+    def _build_shortcuts(self):
+        # Decorate (adds short-cut) sample_annotation table with for category name.
+        for record in self.database["sample_annotation"]:
+            inst = self._get_data('instance', record['instance_token'])
+            record['category_name'] = self._get_data('category', inst['category_token'])['name']
+
+        # Decorate (adds short-cut) sample_data with sensor information.
+        for record in self.database["sample_data"]:
+            cs_record = self._get_data('calibrated_sensor', record['calibrated_sensor_token'])
+            sensor_record = self._get_data('sensor', cs_record['sensor_token'])
+            record['sensor_modality'] = sensor_record['modality']
+            record['channel'] = sensor_record['channel']
+
+        # Reverse-index samples with sample_data and annotations.
+        for record in self.database["sample"]:
+            record['data'] = {}
+            record['anns'] = []
+
+        for record in self.database["sample_data"]:
+            if record['is_key_frame']:
+                sample_record = self._get_data('sample', record['sample_token'])
+                sample_record['data'][record['channel']] = record['token']
+
+        for ann_record in self.database["sample_annotation"]:
+            sample_record = self._get_data('sample', ann_record['sample_token'])
+            sample_record['anns'].append(ann_record['token'])
+
+    def _get_data(self, table_name: str, token: str) -> dict:
+        return self.database[table_name][self._token_to_index[table_name][token]]
 
     def _get_default_anno_cache_path(self, split, version):
         return f"{os.environ['HOME']}/.cache/leanai/nusc_{version}_{split}.json"
@@ -120,14 +172,14 @@ class NuscDataset(SimpleDataset):
         """
         all_tokens = []
         sequences = self._get_split_sequences(self.split, self.version)
-        for scene in tqdm(self.nusc.scene, desc="Collecting tokens"):
+        for scene in tqdm(self.database["scene"], desc="Collecting tokens"):
             if scene["name"] not in sequences: continue
             sample_token = scene['first_sample_token']
             sample = {"next": sample_token}
             while sample_token != scene['last_sample_token']:
                 all_tokens.append(sample_token)
                 sample_token = sample["next"]
-                sample = self.nusc.get('sample', sample_token)
+                sample = self._get_data('sample', sample_token)
         return list(filter(self.is_valid_sample_token, all_tokens))
 
     def _load_image_for_sensor(self, sample_token: str, sensor: str) -> np.ndarray:
@@ -135,8 +187,8 @@ class NuscDataset(SimpleDataset):
         Load the image corresponding to a sample token and sensor.
         :return: An array of shape (h, w, 3) encoded RGB.
         """
-        sample = self.nusc.get('sample', sample_token)
-        cam_data = self.nusc.get('sample_data', sample['data'][sensor])
+        sample = self._get_data('sample', sample_token)
+        cam_data = self._get_data('sample_data', sample['data'][sensor])
         image = cv2.imread(os.path.join(self.data_path, cam_data["filename"]))
         return np.copy(image[:,:,::-1])
 
@@ -171,9 +223,9 @@ class NuscDataset(SimpleDataset):
         Get the lidar scan as a pointcloud of shape (N, 4).
         Each scan is a Nx4 array of [x,y,z,reflectance].
         """
-        sample = self.nusc.get('sample', sample_token)
+        sample = self._get_data('sample', sample_token)
         sensor = "LIDAR_TOP"
-        data = self.nusc.get('sample_data', sample['data'][sensor])
+        data = self._get_data('sample_data', sample['data'][sensor])
         lidar_path = os.path.join(self.data_path, data["filename"])
         pointcloud = LidarPointCloud.from_file(lidar_path).points
         pointcloud = np.swapaxes(pointcloud, 0, 1)
@@ -187,9 +239,9 @@ class NuscDataset(SimpleDataset):
         :param sensor: A camera for which to load the projection.
             Must be in `CAMERA_SENSORS`.
         """
-        sample = self.nusc.get('sample', sample_token)
-        cam_data = self.nusc.get('sample_data', sample['data'][sensor])
-        calibrated = self.nusc.get('calibrated_sensor', cam_data['calibrated_sensor_token'])        
+        sample = self._get_data('sample', sample_token)
+        cam_data = self._get_data('sample_data', sample['data'][sensor])
+        calibrated = self._get_data('calibrated_sensor', cam_data['calibrated_sensor_token'])        
         projection_cam = np.zeros((3, 4))
         projection_cam[:3, :3] = calibrated['camera_intrinsic']
         return projection_cam
@@ -222,11 +274,11 @@ class NuscDataset(SimpleDataset):
         :param sensor: A sensor for which to load the transform matrix.
             Must be in `CAMERA_SENSORS`, `LIDAR_SENSORS` or `RADAR_SENSORS`
         """
-        sample = self.nusc.get('sample', sample_token)
-        sensor_data = self.nusc.get(
+        sample = self._get_data('sample', sample_token)
+        sensor_data = self._get_data(
             'sample_data', sample['data'][sensor]
         )
-        calibrated = self.nusc.get(
+        calibrated = self._get_data(
             'calibrated_sensor', sensor_data['calibrated_sensor_token']
         )
         return transform_matrix(
@@ -269,11 +321,11 @@ class NuscDataset(SimpleDataset):
 
         :param sample_token: The sample token defines the frame.
         """
-        sample = self.nusc.get('sample', sample_token)
-        sensor_data = self.nusc.get(
+        sample = self._get_data('sample', sample_token)
+        sensor_data = self._get_data(
             'sample_data', sample['data'][self.MAIN_CAM]
         )
-        ego_pose = self.nusc.get(
+        ego_pose = self._get_data(
             'ego_pose', sensor_data["ego_pose_token"]
         )
         return transform_matrix(
@@ -286,10 +338,10 @@ class NuscDataset(SimpleDataset):
         """
         Get the annotations for a frame from the nuscenes dataset as a list.
         """
-        sample = self.nusc.get('sample', sample_token)
+        sample = self._get_data('sample', sample_token)
         annotations = []
         for token in sample['anns']:
-            annotations.append(self.nusc.get('sample_annotation', token))
+            annotations.append(self._get_data('sample_annotation', token))
         return annotations
 
     def get_class_ids(self, sample_token: str) -> List[str]:
@@ -362,19 +414,20 @@ class NuscDataset(SimpleDataset):
 
         Returns the boxes2d and the indices for the corresponding 3d annotations.
         """
-        images = self.get_images(sample_token)
         projections = self.get_projections(sample_token)
         ego_to_cams = self.get_ego_to_cams(sample_token)
         world_to_ego = self.get_world_to_ego(sample_token)
         boxes_3d = self.get_boxes_3d(sample_token)
 
         result = []
-        for image, projection, ego_to_cam in zip(images, projections, ego_to_cams):
+        for projection, ego_to_cam in zip(projections, ego_to_cams):
             world_to_cam = np.dot(ego_to_cam, world_to_ego)
             full_projection = np.dot(projection, world_to_cam)
+            width = 1600
+            height = 900
             
             corners = compute_corners(boxes_3d)
-            boxes_2d, indices = project_3d_box_to_2d(corners, full_projection, image.shape[1], image.shape[0])
+            boxes_2d, indices = project_3d_box_to_2d(corners, full_projection, width, height)
             boxes_2d = convert_xxyy_to_cxcywh(boxes_2d)
             result.append((boxes_2d, indices))
         return result
