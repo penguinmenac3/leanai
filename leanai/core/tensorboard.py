@@ -4,9 +4,9 @@
 > A logger for tensorboard which is used by the Experiment.
 """
 import os
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 
-from pytorch_lightning.loggers.base import rank_zero_experiment
+from pytorch_lightning.loggers.logger import rank_zero_experiment
 from pytorch_lightning.utilities import rank_zero_only
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger as _TensorBoardLogger
 

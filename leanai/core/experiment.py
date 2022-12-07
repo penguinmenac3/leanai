@@ -155,7 +155,8 @@ class Experiment(pl.LightningModule):
         num_dataloader_threads: int = 0,
         gpus: int = None,
         nodes: int = None,
-        checkpoint: str = None
+        checkpoint: str = None,
+        accelerator: str = "gpu",
     ):
         """
         Run the training loop of the experiment.
@@ -186,7 +187,8 @@ class Experiment(pl.LightningModule):
         trainer = pl.Trainer(
             default_root_dir=self.output_path,
             max_epochs=epochs,
-            gpus=gpus,
+            accelerator=accelerator,
+            devices=gpus,
             num_nodes=nodes,
             logger=TensorBoardLogger(
                 save_dir=self.output_path, version=self.version, name="",
@@ -207,7 +209,8 @@ class Experiment(pl.LightningModule):
         batch_size: int = 1,
         gpus: int = None,
         nodes: int = None,
-        checkpoint: str = None
+        checkpoint: str = None,
+        accelerator: str = "gpu",
     ):
         """
         Run inference for the experiment.
@@ -231,7 +234,8 @@ class Experiment(pl.LightningModule):
         trainer = pl.Trainer(
             default_root_dir=self.output_path,
             max_epochs=1,
-            gpus=gpus,
+            accelerator=accelerator,
+            devices=gpus,
             num_nodes=nodes,
             logger=TensorBoardLogger(
                 save_dir=self.output_path, version=self.version, name="",
