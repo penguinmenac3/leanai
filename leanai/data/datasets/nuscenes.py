@@ -15,7 +15,7 @@ from nuscenes.utils.geometry_utils import transform_matrix
 from nuscenes.utils.splits import train, val, test, mini_train, mini_val
 
 from leanai.core.logging import DEBUG_LEVEL_API, info, debug, error, warn
-from leanai.core.annotations import JSONFileCache
+from leanai.core.annotations import JSONFileCache, PickleFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 from leanai.data.dataset import SimpleDataset
 from leanai.data.transforms.bounding_boxes import compute_corners, convert_xxyy_to_cxcywh, project_3d_box_to_2d
@@ -55,7 +55,8 @@ class NuscDataset(SimpleDataset):
         self,
         split: str, data_path: str, version: str = "v1.0-mini",
         DatasetInput=NuscInputType, DatasetOutput=NuscOutputType,
-        anno_cache: str = None, transforms=[], test_mode=False
+        anno_cache: str = None, database_cache: str = None, 
+        transforms=[], test_mode=False
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -68,6 +69,7 @@ class NuscDataset(SimpleDataset):
         :param DatasetInput: Type that is filled for inputs using getters.
         :param DatasetOutput: Type that is filled for outputs using getters.
         :param anno_cache: (Optional) Path where annotations should be cached.
+        :param database_cache: (Optional) Path where database should be cached.
         :param transforms: Transforms that are applied on the dataset to convert
             the format to what the model requires. (Default: [])
         :param test_mode: Passed to the constructor of transforms (Default: False).
@@ -83,30 +85,32 @@ class NuscDataset(SimpleDataset):
         self.split = split
         self.version = version
         self.data_path = data_path
-        self.database = dict()
-        self._load_database()
+        if database_cache is None:
+            database_cache = self._get_default_db_cache_path(split, version)
+        self.database, self._token_to_index = self._load_database(cache_path=database_cache)
         self._build_shortcuts()
         if anno_cache is None:
             anno_cache = self._get_default_anno_cache_path(split, version)
         self.set_sample_tokens(self.get_sample_tokens(cache_path=anno_cache))
         debug("Done loading nuscenes.", level=DEBUG_LEVEL_API)
 
+    @PickleFileCache
     def _load_database(self):
-        def _load_table(table_name) -> dict:
-            with open(os.path.join(self.data_path, self.version, f'{table_name}.json')) as f:
-                return json.load(f)
-        self._token_to_index = {}
+        database = dict()
+        _token_to_index = dict()
         tables = [
             'category', 'attribute', 'visibility', 'instance', 'sensor',
             'calibrated_sensor', 'ego_pose', 'log', 'scene', 'sample',
             'sample_data', 'sample_annotation', 'map', 'lidarseg', 'panoptic'
         ]
         for table in tables:
-            self.database[table] = _load_table(table)
-            self._token_to_index[table] = {
+            with open(os.path.join(self.data_path, self.version, f'{table}.json')) as f:
+                database[table] = json.load(f)
+            _token_to_index[table] = {
                 entry["token"]: idx
-                for idx, entry in enumerate(self.database[table])
+                for idx, entry in enumerate(database[table])
             }
+        return database, _token_to_index
 
     def _build_shortcuts(self):
         # Decorate (adds short-cut) sample_annotation table with for category name.
@@ -140,6 +144,9 @@ class NuscDataset(SimpleDataset):
 
     def _get_default_anno_cache_path(self, split, version):
         return f"{os.environ['HOME']}/.cache/leanai/nusc_{version}_{split}.json"
+
+    def _get_default_db_cache_path(self, split, version):
+        return f"{os.environ['HOME']}/.cache/leanai/nusc_{version}_db.pickle"
 
     def _get_split_sequences(self, split: str, version: str) -> List[str]:
         """

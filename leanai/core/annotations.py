@@ -5,6 +5,7 @@
 """
 from abc import ABC, abstractmethod
 import os, json
+import pickle
 from leanai.core.logging import DEBUG_LEVEL_API, debug
 
 class _ClassDecorator(ABC):
@@ -71,4 +72,32 @@ class JSONFileCache(_ClassDecorator):
             data = self.f(*args, **kwargs)
             with open(cache_path, "w") as f:
                 f.write(json.dumps(data))
+            return data
+
+
+class PickleFileCache(_ClassDecorator):
+    def __init__(self, f):
+        """
+        Annotate a function in a class to use a pickle file to cache calls.
+        Instead of calling the function loads the data from the pickle if availible.
+
+        The caller must provide a `cache_path`, when calling the function.
+        `cache_path` must point at the path where the pickle is stored (e.g. `~/.cache/my_file.pickle`)
+        """
+        self.f = f
+    
+    def __call__(self, *args, cache_path=None, **kwargs):
+        if cache_path is None:
+            raise RuntimeError("When calling the function wrapped with JSONFileCache, you must provide a named argument: cache_path.")
+        if os.path.exists(cache_path):
+            debug(f"Using cache: {cache_path}", level=DEBUG_LEVEL_API)
+            with open(cache_path, "rb") as f:
+                return pickle.load(f)
+        else:
+            debug(f"Building cache: {cache_path}", level=DEBUG_LEVEL_API)
+            path = os.path.dirname(cache_path)
+            os.makedirs(path, exist_ok=True)
+            data = self.f(*args, **kwargs)
+            with open(cache_path, "wb") as f:
+                pickle.dump(data, f)
             return data
