@@ -15,6 +15,8 @@ import traceback
 import torch
 import numpy as np
 from torch.utils.data import DataLoader as _DataLoader
+from torch.utils.data import DataLoader2 as _DataLoader2
+from torch.utils.data.datapipes.datapipe import IterDataPipe
 from torch.utils.data._utils.collate import default_collate_err_msg_format
 from torch.utils.data import IterableDataset as _IterableDataset
 from torch._six import string_classes
@@ -148,15 +150,26 @@ class DataLoader(Iterable):
         self.device = device
         if isinstance(dataset, _IterableDataset):
             shuffle = False
-        self.native_dataloader = _DataLoader(
-            dataset,
-            batch_size=batch_size,
-            shuffle=shuffle,
-            num_workers=num_workers,
-            drop_last=True,
-            pin_memory=True,
-            collate_fn=collate_fn
-        )
+        if isinstance(self.dataset, IterDataPipe):
+            self.native_dataloader = _DataLoader2(
+                dataset,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                num_workers=num_workers,
+                drop_last=True,
+                pin_memory=True,
+                collate_fn=collate_fn
+            )
+        else:
+            self.native_dataloader = _DataLoader(
+                dataset,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                num_workers=num_workers,
+                drop_last=True,
+                pin_memory=True,
+                collate_fn=collate_fn
+            )
 
     def __iter__(self) -> Iterator:
         class _TensorDataloaderIterator(Iterator):
