@@ -34,6 +34,8 @@ class ImageConversion(Module):
         image = image.float()
         self.build(image)
         if self.to_channel_first:
+            if len(image.shape) != 4:
+                raise RuntimeError(f"Shape of image must be 4 dimensional. Found shape: {image.shape}")
             image = image.permute(0, 3, 1, 2)
         if self.standardize:
             image.sub_(self.mean[None, :, None, None]).div_(self.std[None, :, None, None])
