@@ -10,13 +10,14 @@ import pytorch_lightning as pl
 import psutil
 import GPUtil
 from time import time
-from typing import Callable, Dict, Union, Optional
+from typing import Callable, Dict, Union, Optional, Iterable
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.functional import Tensor
 from torch.utils.data.dataset import IterableDataset
 from pytorch_lightning.utilities.cloud_io import load as pl_load
 from pytorch_lightning.utilities import move_data_to_device
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
 from leanai.core.config import DictLike
 from leanai.core.definitions import SPLIT_TEST, SPLIT_TRAIN, SPLIT_VAL
@@ -50,7 +51,7 @@ class Experiment(pl.LightningModule):
     def __init__(
         self,
         model: Module,
-        config: Dict[str, any] = dict(),
+        config: Optional[Dict[str, any]] = None,
         output_path=None,
         version=None,
         example_input=None,
@@ -135,6 +136,9 @@ class Experiment(pl.LightningModule):
         self.loss = None
         self._load_dataset = None
         self._build_optimizer = None
+        self._build_lr_scheduler = None
+        if config is not None:
+            self.save_hyperparameters(config)
 
     def _run_model_on_example(self, example_input):
         if isinstance(example_input, Tensor):
@@ -150,6 +154,7 @@ class Experiment(pl.LightningModule):
         load_dataset: Union[Callable, Dict],
         build_loss: Union[Callable, Dict],
         build_optimizer: Union[Callable, Dict],
+        build_lr_scheduler: Optional[Union[Callable, Dict]] = None,
         batch_size: int = 1,
         epochs: int = 1000,
         num_dataloader_threads: int = 0,
@@ -179,11 +184,18 @@ class Experiment(pl.LightningModule):
         self._batch_size = batch_size
         self._load_dataset = load_dataset
         self._build_optimizer = build_optimizer
+        self._build_lr_scheduler = build_lr_scheduler
+        self._update_lr_scheduler_every_step = False
+        if "update_every_step" in build_lr_scheduler:
+            self._update_lr_scheduler_every_step = build_lr_scheduler["update_every_step"]
+            del build_lr_scheduler["update_every_step"]
         self._num_workers = num_dataloader_threads
         self.loss = build_loss()
         loss._active_experiment = self
         gpus = int(_env_defaults(gpus, "SLURM_GPUS", 1))
         nodes = int(_env_defaults(nodes, "SLURM_NODES", 1))
+        lr_monitor = LearningRateMonitor(logging_interval='step')
+        checkpointing = ModelCheckpoint(monitor='loss/total', save_top_k=2, mode='min', every_n_epochs=1, save_last=True)
         trainer = pl.Trainer(
             default_root_dir=self.output_path,
             max_epochs=epochs,
@@ -196,7 +208,8 @@ class Experiment(pl.LightningModule):
                 #default_hp_metric=False
             ),
             resume_from_checkpoint=self._find_checkpoint(checkpoint),
-            strategy="ddp" if gpus > 1 or nodes > 1 else None
+            strategy="ddp" if gpus > 1 or nodes > 1 else None,
+            callbacks=[lr_monitor, checkpointing],
         )
         debug("Experiment before trainer.fit(self)", level=DEBUG_LEVEL_CORE)
         debug(self, level=DEBUG_LEVEL_CORE)
@@ -252,14 +265,32 @@ class Experiment(pl.LightningModule):
     # Configure training
     # **********************************************
     def configure_optimizers(self):
-        return self._build_optimizer(self.parameters())
+        optimizer = self._build_optimizer(self.parameters())
+        if self._build_lr_scheduler is not None:
+            return {"optimizer": optimizer, "lr_scheduler": self._build_lr_scheduler(optimizer)}
+        else:
+            return {"optimizer": optimizer}
 
     # **********************************************
     # Steping through the model
     # **********************************************
     def training_step(self, batch, batch_idx):
+        # Run a trainval step
         feature, target = batch
-        return self.trainval_step(feature, target, batch_idx)
+        
+        result = self.trainval_step(feature, target, batch_idx)
+        
+        if self._update_lr_scheduler_every_step:
+            # Update learning rates
+            schedulers = self.lr_schedulers()
+            if schedulers is not None:
+                # Wrap if we have a single scheduler
+                if not isinstance(schedulers, Iterable):
+                    schedulers = (schedulers,)
+                # Update scheduler
+                for scheduler in schedulers:
+                    scheduler.step()
+        return result
 
     def validation_step(self, batch, batch_idx):
         feature, target = batch
