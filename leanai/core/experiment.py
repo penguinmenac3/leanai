@@ -126,7 +126,7 @@ class Experiment(pl.LightningModule):
         if example_input is not None:
             debug("Initializing model", level=DEBUG_LEVEL_CORE)
             self.example_input_array = example_input
-            self._run_model_on_example(example_input)
+            self.predict_model(example_input)
             debug("Model initialized", level=DEBUG_LEVEL_CORE)
         self._meta_data_logging = meta_data_logging
         set_logger(os.path.join(output_path, version), log_code=True)
@@ -140,14 +140,14 @@ class Experiment(pl.LightningModule):
         if config is not None:
             self.save_hyperparameters(config)
 
-    def _run_model_on_example(self, example_input):
-        if isinstance(example_input, Tensor):
-            example_input = (example_input,)
-        inp = move_data_to_device(example_input, self.device)
+    def predict_model(self, input_tensor):
+        if isinstance(input_tensor, Tensor):
+            input_tensor = (input_tensor,)
+        inp = move_data_to_device(input_tensor, self.device)
         if self._InputType is not None:
-            self.model(self._InputType(*inp))
+            return self.model(self._InputType(*inp))
         else:
-            self.model(*inp)
+            return self.model(*inp)
 
     def run_training(
         self,
