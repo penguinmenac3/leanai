@@ -19,7 +19,7 @@ def plot_boxes_on_image(image, boxes, titles=None, color=(0,255,255), thickness=
     """
     for idx, box in enumerate(boxes):
         current_color = color
-        if idx in color and isinstance(color[idx], tuple):
+        if idx < len(color) and idx in color and isinstance(color[idx], tuple):
             current_color = color[idx]
         start_point = tuple([int(x) for x in box[:2] - box[2:] // 2])
         end_point = tuple([int(x) for x in box[:2] + box[2:] // 2])
