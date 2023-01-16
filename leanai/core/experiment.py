@@ -220,6 +220,7 @@ class Experiment(pl.LightningModule):
         load_dataset: Callable,
         handle_step: Callable,
         batch_size: int = 1,
+        num_dataloader_threads: int = 0,
         gpus: int = None,
         nodes: int = None,
         checkpoint: str = None,
@@ -233,6 +234,7 @@ class Experiment(pl.LightningModule):
         :param handle_step: A function that is called with the predictions of the model and the batch data.
             The function has a signature `def handle_step(predictions, features, targets) -> void`.
         :param batch_size: The batch size for training.
+        :param num_dataloader_threads: The number of threads to use for dataloading. (Default: 0 = use main thread)
         :param gpus: The number of gpus used for training. (Default: SLURM_GPUS or 1)
         :param nodes: The number of nodes used for training. (Default: SLURM_NODES or 1)
         :param checkpoint: The path to the checkpoint that should be loaded (defaults to None).
@@ -241,6 +243,7 @@ class Experiment(pl.LightningModule):
         self._batch_size = batch_size
         self._load_dataset = load_dataset
         self._handle_test_step = handle_step
+        self._num_workers = num_dataloader_threads
         self.load_checkpoint(checkpoint)
         gpus = int(_env_defaults(gpus, "SLURM_GPUS", 1))
         nodes = int(_env_defaults(nodes, "SLURM_NODES", 1))
