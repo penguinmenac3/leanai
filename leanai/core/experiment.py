@@ -162,6 +162,7 @@ class Experiment(pl.LightningModule):
         nodes: int = None,
         checkpoint: str = None,
         accelerator: str = "gpu",
+        log_every_n_steps: int = 50,
     ):
         """
         Run the training loop of the experiment.
@@ -179,6 +180,8 @@ class Experiment(pl.LightningModule):
         :param checkpoint: The path to the checkpoint that should be resumed (defaults to None).
             In case of None this searches for a checkpoint in {output_path}/{name}/{version}/checkpoints and resumes it.
             Without defining a version this means no checkpoint can be found as there will not exist a  matching folder.
+        :param log_every_n_steps: It may slow down training to log on every single batch.
+            By default, Lightning logs every 50 rows, or 50 training steps.
         """
         self._testing = False
         self._batch_size = batch_size
@@ -210,6 +213,7 @@ class Experiment(pl.LightningModule):
             resume_from_checkpoint=self._find_checkpoint(checkpoint),
             strategy="ddp" if gpus > 1 or nodes > 1 else None,
             callbacks=[lr_monitor, checkpointing],
+            log_every_n_steps=log_every_n_steps,
         )
         debug("Experiment before trainer.fit(self)", level=DEBUG_LEVEL_CORE)
         debug(self, level=DEBUG_LEVEL_CORE)
