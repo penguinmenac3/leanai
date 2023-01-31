@@ -8,7 +8,10 @@ import os
 from pytorch_lightning.loggers.logger import rank_zero_experiment
 from pytorch_lightning.utilities import rank_zero_only
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger as _TensorBoardLogger
-from pytorch_lightning.loggers.tensorboard import SummaryWriter
+try:
+    from torch.utils.tensorboard import SummaryWriter
+except:
+    from tensorboardX import SummaryWriter  # type: ignore[no-redef]
 
 
 class TensorBoardLogger(_TensorBoardLogger):
