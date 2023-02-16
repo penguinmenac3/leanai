@@ -102,6 +102,8 @@ class Conv2D(Module):
             raise NotImplementedError("Padding {} is not implemented.".format(self.padding))
         in_channels = features.shape[1]
         #print(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation, self.kwargs)
+        if self.filters is None:
+            self.filters = in_channels
         self.conv = _Conv2d(in_channels, self.filters, self.kernel_size, self.stride, self.padding, self.dilation, **self.kwargs)
         self.conv.weight.data = self.kernel_initializer(self.conv.weight.data)
         if torch.cuda.is_available():
