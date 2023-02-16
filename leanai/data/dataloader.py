@@ -17,7 +17,7 @@ import numpy as np
 from torch.utils.data import DataLoader as _DataLoader
 from torch.utils.data import DataLoader2 as _DataLoader2
 from torch.utils.data.datapipes.datapipe import IterDataPipe
-from torch.utils.data._utils.collate import default_collate_err_msg_format
+from torch.utils.data._utils.collate import default_collate_err_msg_format, default_collate
 from torch.utils.data import IterableDataset as _IterableDataset
 from torch._six import string_classes
 
@@ -80,6 +80,8 @@ def _default_collate(batch):
             numel = sum([x.numel() for x in batch])
             storage = elem.storage()._new_shared(numel)
             out = elem.new(storage)
+        # TODO output resize to flatten and then back into shape for some reason?
+        # TODO is this custom default colate still needed or does the original one work by now?
         return torch.stack(batch, 0, out=out)
     elif elem_type.__module__ == 'numpy' and elem_type.__name__ != 'str_' \
             and elem_type.__name__ != 'string_':
@@ -127,7 +129,7 @@ def _named_tuple_to_device(x, device):
 
 
 class DataLoader(Iterable):
-    def __init__(self, dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0, device = None, collate_fn = _default_collate):
+    def __init__(self, dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0, device = None, collate_fn = default_collate):
         """"""
         """
         Converts a dataset into a pytorch dataloader.
