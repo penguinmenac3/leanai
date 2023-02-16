@@ -166,7 +166,7 @@ def _log_code(output_dir: str, overwrite_existing=False) -> None:
     :param output_dir: The directory where to copy all code.
     :param overwrite_existing: When set to true it overwrites existing code copies.
     """
-    base_path = os.path.join(os.getcwd(), "..")
+    base_path = os.path.join(os.getcwd())
     def _get_backup_path(fname: str) -> str:
         return os.path.join(os.path.normpath(output_dir), fname)
 
