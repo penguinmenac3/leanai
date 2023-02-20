@@ -189,7 +189,7 @@ class Experiment(pl.LightningModule):
         self._build_optimizer = build_optimizer
         self._build_lr_scheduler = build_lr_scheduler
         self._update_lr_scheduler_every_step = False
-        if "update_every_step" in build_lr_scheduler:
+        if build_lr_scheduler is not None and "update_every_step" in build_lr_scheduler:
             self._update_lr_scheduler_every_step = build_lr_scheduler["update_every_step"]
             del build_lr_scheduler["update_every_step"]
         self._num_workers = num_dataloader_threads
