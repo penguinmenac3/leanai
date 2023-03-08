@@ -21,8 +21,8 @@ def plot_boxes_on_image(image, boxes, titles=None, color=(0,255,255), thickness=
         current_color = color
         if idx < len(color) and idx in color and isinstance(color[idx], tuple):
             current_color = color[idx]
-        start_point = tuple([int(x) for x in box[:2] - box[2:] // 2])
-        end_point = tuple([int(x) for x in box[:2] + box[2:] // 2])
+        start_point = tuple([int(x) for x in box[:2] - box[2:4] // 2])
+        end_point = tuple([int(x) for x in box[:2] + box[2:4] // 2])
         image = cv2.rectangle(image, start_point, end_point, current_color, thickness)
         if titles is not None:
             org = (max(start_point[0]+2, 2), max(start_point[1] + 22, 22))
