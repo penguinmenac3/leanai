@@ -18,4 +18,4 @@ class Loss(Module):
         if isinstance(value, Tensor) and value.device != "cpu":
             value = value.detach().cpu()
         if _active_experiment is not None:
-            _active_experiment.log(name, value, **kwargs)
+            _active_experiment.log(name, value, sync_dist=True, **kwargs)
