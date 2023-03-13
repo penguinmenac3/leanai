@@ -6,7 +6,7 @@
 import torch.nn as nn
 
 from leanai.core.config import DictLike
-from leanai.core.capture_tensors import CaptureNamespace, capture
+from leanai.model._capture_tensors import CaptureNamespace, capture
 
 
 class DetectionModel(nn.Module):

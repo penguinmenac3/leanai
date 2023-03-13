@@ -3,7 +3,7 @@
 
 > These layers select parts of a tensor.
 """
-from leanai.core.indexed_tensor_helpers import sliced_per_batch
+from leanai.model._indexed_tensor_helpers import sliced_per_batch
 from typing import List
 import torch
 from torch import Tensor

@@ -6,7 +6,7 @@
 from typing import List, Union
 from torch import Tensor, nn
 from leanai.core.config import DictLike
-from leanai.core.capture_tensors import CaptureNamespace, capture
+from leanai.model._capture_tensors import CaptureNamespace, capture
 
 
 class Sequential(nn.Module):
