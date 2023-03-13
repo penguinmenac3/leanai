@@ -74,11 +74,25 @@ class DictLike(dict):
         return outp
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
+        def _try_build(elem):
+            if isinstance(elem, DictLike):
+                if "__autobuild__" in params:
+                    elem = elem()
+            return elem
+
         if "type" in self:
             constructor = self["type"]
             params = dict(**self)
             del params["type"]
+            if "__autobuild__" in params:
+                del params["__autobuild__"]
             params.update(kwds)
+            params = {
+                k: _try_build(v) for k, v in params.items()
+            }
+            args = [
+                _try_build(arg) for arg in args
+            ]
             debug(f"Calling DictLike(*{args}, **{params})", level=DEBUG_LEVEL_CORE)
             return constructor(*args, **params)
         else:
