@@ -8,13 +8,14 @@ import os
 from pytorch_lightning.loggers.logger import rank_zero_experiment
 from pytorch_lightning.utilities import rank_zero_only
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger as _TensorBoardLogger
+from pytorch_lightning import Callback
 try:
     from torch.utils.tensorboard import SummaryWriter
 except:
     from tensorboardX import SummaryWriter  # type: ignore[no-redef]
 
 
-class TensorBoardLogger(_TensorBoardLogger):
+class TensorBoardLogger(_TensorBoardLogger, Callback):
     """
     The tensorboard logger used in the run_experiment function.
 
@@ -23,7 +24,8 @@ class TensorBoardLogger(_TensorBoardLogger):
     (see documentation of pytorch_lightning.loggers.tensorboard.TensorBoardLogger)
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        _TensorBoardLogger.__init__(self, *args, **kwargs)
+        Callback.__init__(self)
         self._mode = "train"
         self._experiment = {}
 
@@ -62,3 +64,12 @@ class TensorBoardLogger(_TensorBoardLogger):
         Creates a subfolder "/{mode}" for tensorboard.
         """
         self._mode = mode
+
+    def on_train_epoch_start(self, trainer, pl_module):
+        self.set_mode("train")
+    
+    def on_validation_epoch_start(self, trainer, pl_module) -> None:
+        self.set_mode("val")
+
+    def on_test_epoch_start(self, trainer, pl_module) -> None:
+        self.set_mode("test")
