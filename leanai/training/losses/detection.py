@@ -4,7 +4,7 @@
 > An implementation of a detection loss.
 """
 from leanai.core.config import DictLike
-from leanai.core.indexed_tensor_helpers import sliced_per_batch
+from leanai.model._indexed_tensor_helpers import sliced_per_batch
 import torch
 import numpy as np
 from leanai.core import logging
