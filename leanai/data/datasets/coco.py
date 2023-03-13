@@ -12,7 +12,7 @@ from collections import defaultdict
 
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
 from leanai.core.logging import warn
-from leanai.data.dataset import SimpleDataset
+from leanai.data.dataset import LeanaiDataset
 from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
 
 
@@ -26,8 +26,14 @@ class COCOOutputType(NamedTuple):
     instance_polygons_2d: List[Any]
 
 
-class COCODataset(SimpleDataset):
-    def __init__(self, split: str, data_path: str, version: str = "2014", DatasetInput=COCOInputType, DatasetOutput=COCOOutputType) -> None:
+class COCODataset(LeanaiDataset):
+    def __init__(
+        self, split: str, data_path: str,
+        version: str = "2014",
+        DatasetInput=COCOInputType,
+        DatasetOutput=COCOOutputType, 
+        transforms=[]
+    ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
 
@@ -38,7 +44,7 @@ class COCODataset(SimpleDataset):
         :param DatasetInput: The type that should be filled for inputs using the getters.
         :param DatasetOutput: The type that should be filled for outputs using the getters.
         """
-        super().__init__(DatasetInput, DatasetOutput)
+        super().__init__(DatasetInput, DatasetOutput, transforms)
         self.split = split
         self.data_path = data_path
         self.version = version

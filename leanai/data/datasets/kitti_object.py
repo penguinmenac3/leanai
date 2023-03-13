@@ -12,7 +12,7 @@ from tqdm import tqdm
 from leanai.core.logging import DEBUG_LEVEL_API, info, debug, warn, error
 from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
-from leanai.data.dataset import SimpleDataset
+from leanai.data.dataset import LeanaiDataset
 from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
 from .kitti_object_splits import TRAIN_SPLIT, VAL_SPLIT
 
@@ -31,12 +31,13 @@ class KittiOutputType(NamedTuple):
     boxes_3d: np.ndarray
 
 
-class KittiDataset(SimpleDataset):
+class KittiDataset(LeanaiDataset):
     def __init__(
         self,
         split: str, data_path: str,
-        DatasetInput=KittiInputType, DatasetOutput=KittiOutputType,
-        anno_cache=None, transforms=[], test_mode=False
+        DatasetInput=KittiInputType,
+        DatasetOutput=KittiOutputType,
+        anno_cache=None, transforms=[]
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -54,7 +55,7 @@ class KittiDataset(SimpleDataset):
         """
         super().__init__(
             DatasetInput, DatasetOutput,
-            transforms=transforms, test_mode=test_mode
+            transforms=transforms
         )
         debug("Loading kitti_object.", level=DEBUG_LEVEL_API)
         if split == SPLIT_TEST:

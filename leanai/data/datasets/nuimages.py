@@ -13,7 +13,7 @@ from nuscenes.utils.splits import train, val, test, mini_train, mini_val
 
 from leanai.core.annotations import JSONFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
-from leanai.data.dataset import SimpleDataset
+from leanai.data.dataset import LeanaiDataset
 from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
 from leanai.data.transforms.bounding_boxes import convert_xyxy_to_cxcywh
 
@@ -26,12 +26,12 @@ class NuimOutputType(NamedTuple):
     #visibilities_2d: List[List[int]]
     boxes_2d: List[np.ndarray]
 
-class NuimDataset(SimpleDataset):
+class NuimDataset(LeanaiDataset):
     def __init__(
         self,
         split: str, data_path: str, version: str = "v1.0-mini",
         DatasetInput=NuimInputType, DatasetOutput=NuimOutputType,
-        anno_cache: str = None, transforms=[], test_mode=True
+        anno_cache: str = None, transforms=[]
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -52,7 +52,7 @@ class NuimDataset(SimpleDataset):
         """
         super().__init__(
             DatasetInput, DatasetOutput,
-            transforms=transforms, test_mode=test_mode
+            transforms=transforms
         )
         self.split = split
         self.version = version

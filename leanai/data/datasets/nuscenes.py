@@ -17,7 +17,7 @@ from nuscenes.utils.splits import train, val, test, mini_train, mini_val
 from leanai.core.logging import DEBUG_LEVEL_API, info, debug, error, warn
 from leanai.core.annotations import JSONFileCache, PickleFileCache
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
-from leanai.data.dataset import SimpleDataset
+from leanai.data.dataset import LeanaiDataset
 from leanai.data.transforms.bounding_boxes import compute_corners, convert_xxyy_to_cxcywh, project_3d_box_to_2d
 from leanai.data.visualizations.plot_boxes import plot_boxes_on_image
 
@@ -36,9 +36,10 @@ class NuscOutputType(NamedTuple):
     visibilities: List[int]
     boxes_3d: np.ndarray
     boxes_2d: List[Tuple[np.ndarray, np.ndarray]]
+    sample_token: str
 
 
-class NuscDataset(SimpleDataset):
+class NuscDataset(LeanaiDataset):
     MAIN_CAM = "CAM_FRONT"
     MAIN_RADAR = "RADAR_FRONT"
     CAMERA_SENSORS = [
@@ -56,7 +57,7 @@ class NuscDataset(SimpleDataset):
         split: str, data_path: str, version: str = "v1.0-mini",
         DatasetInput=NuscInputType, DatasetOutput=NuscOutputType,
         anno_cache: str = None, database_cache: str = None, 
-        transforms=[], test_mode=False
+        transforms=[]
     ) -> None:
         """
         Implements all the getters for the annotations in coco per frame.
@@ -76,7 +77,7 @@ class NuscDataset(SimpleDataset):
         """
         super().__init__(
             DatasetInput, DatasetOutput,
-            transforms=transforms, test_mode=test_mode
+            transforms=transforms
         )
         debug("Loading nuscenes.", level=DEBUG_LEVEL_API)
         anno_path = os.path.join(data_path, version)

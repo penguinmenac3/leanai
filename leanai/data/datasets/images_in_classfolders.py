@@ -8,16 +8,20 @@ import numpy as np
 import os
 import cv2
 from leanai.core.definitions import SPLIT_TRAIN, SPLIT_VAL, SPLIT_TEST
-from leanai.data.dataset import SimpleDataset
+from leanai.data.dataset import LeanaiDataset
 
 
 InputType = NamedTuple("Input", image=np.ndarray)
 OutputType = NamedTuple("Output", class_id=np.ndarray)
 
 
-class ImagesInClassfoldersDataset(SimpleDataset):
-    def __init__(self, split: str, data_path, data_train_split=0.6, data_val_split=0.2, data_test_split=0.2) -> None:
-        super().__init__(InputType, OutputType)
+class ImagesInClassfoldersDataset(LeanaiDataset):
+    def __init__(
+        self, split: str, data_path,
+        train_split=0.6, val_split=0.2, test_split=0.2, 
+        transforms=[]
+    ) -> None:
+        super().__init__(InputType, OutputType, transforms)
         self.data_path = data_path
         self.classes = os.listdir(data_path)
         sample_tokens = []
@@ -27,9 +31,9 @@ class ImagesInClassfoldersDataset(SimpleDataset):
             self.class_mapping[class_id] = idx
 
         # Split the data
-        assert data_train_split + data_val_split + data_test_split == 1
-        train_end = int(data_train_split*len(self.classes))
-        val_end = int((data_train_split+data_val_split)*len(self.classes))
+        assert train_split + val_split + test_split == 1
+        train_end = int(train_split*len(self.classes))
+        val_end = int((train_split+val_split)*len(self.classes))
         if split == SPLIT_TRAIN:
             self.classes = self.classes[:train_end]
         if split == SPLIT_VAL:

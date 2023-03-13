@@ -28,12 +28,3 @@ class Transform():
         :return: The output data.
         """
         raise NotImplementedError
-
-    @property
-    def version(self):
-        """
-        Defines the version of the transform. The name can be also something descriptive of the method.
-
-        :return: The version number of the transform.
-        """
-        raise NotImplementedError

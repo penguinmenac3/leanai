@@ -128,7 +128,7 @@ def _named_tuple_to_device(x, device):
     return result
 
 
-class DataLoader(Iterable):
+class LeanaiDataLoader(Iterable):
     def __init__(self, dataset, batch_size: int, shuffle: bool = True, num_workers: int = 0, device = None, collate_fn = default_collate):
         """"""
         """

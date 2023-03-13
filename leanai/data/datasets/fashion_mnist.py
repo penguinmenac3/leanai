@@ -7,16 +7,19 @@ from typing import Any, NamedTuple, Tuple
 import numpy as np
 from torchvision.datasets import FashionMNIST
 from leanai.core.definitions import SPLIT_TRAIN
-from leanai.data.dataset import SimpleDataset
+from leanai.data.dataset import LeanaiDataset
 
 
 MNISTInputType = NamedTuple("MNISTInput", image=np.ndarray)
 MNISTOutputType = NamedTuple("MNISTOutput", class_id=np.ndarray)
 
 
-class FashionMNISTDataset(SimpleDataset):
-    def __init__(self, split: str, data_path: str = "", download=True) -> None:
-        super().__init__(MNISTInputType, MNISTOutputType)
+class FashionMNISTDataset(LeanaiDataset):
+    def __init__(
+        self, split: str, data_path: str = "",
+        download=True, transforms=[]
+    ) -> None:
+        super().__init__(MNISTInputType, MNISTOutputType, transforms)
         self.dataset = FashionMNIST(data_path, train=split == SPLIT_TRAIN, download=download)
         self.set_sample_tokens(range(len(self.dataset)))
 

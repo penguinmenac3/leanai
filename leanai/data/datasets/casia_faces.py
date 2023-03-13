@@ -9,8 +9,16 @@ from .images_in_classfolders import ImagesInClassfoldersDataset
 
 
 class CasiaFacesDataset(ImagesInClassfoldersDataset):
-    def __init__(self, split) -> None:
-        super().__init__(split)
+    def __init__(
+        self, split: str, data_path,
+        train_split=0.6, val_split=0.2, test_split=0.2, 
+        transforms=[]
+    ) -> None:
+        super().__init__(
+            split, data_path,
+            train_split, val_split, test_split,
+            transforms
+        )
 
     def get_class_id(self, sample_token):
         class_id = super().get_class_id(sample_token)
