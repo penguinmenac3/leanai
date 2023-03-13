@@ -1,6 +1,6 @@
 import unittest
 import torch
-from leanai.core.indexed_tensor_helpers import *
+from leanai.model._indexed_tensor_helpers import *
 
 
 class TestIndexedTensorHelpers(unittest.TestCase):
