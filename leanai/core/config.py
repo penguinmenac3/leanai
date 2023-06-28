@@ -31,6 +31,7 @@ Finally you can flatten your config to be a dict where the structure is flattene
 into namespaces separated by underscores (_).
 """
 from typing import Any
+from collections.abc import Sequence
 
 from leanai.core.logging import DEBUG_LEVEL_CORE, debug
 
@@ -39,7 +40,7 @@ class DictLike(dict):
     def __init__(self, **kwargs) -> None:
         """
         Create an object that behaves like a dictionary with some extras.
-        
+
         You have to specify keys via the keyword arguments.
         """
         super().__init__(**kwargs)
@@ -49,9 +50,20 @@ class DictLike(dict):
             return self[__name]
         else:
             return super().__getattribute__(__name)
-    
+
     def __setattr__(self, __name: str, __value: Any) -> None:
         self[__name] = __value
+
+    def _auto_build(self):
+        for key, value in self.items():
+            if isinstance(value, DictLike):
+                if 'type' in value:
+                    self[key] = value()
+
+            if isinstance(value, Sequence) and not isinstance(value, str):
+                element_type = type(value)
+                self[key] = element_type([val() if isinstance(
+                    val, DictLike) else val for val in value])
 
     def flatten(self, depth=0):
         """
@@ -74,15 +86,22 @@ class DictLike(dict):
         return outp
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
+
+        if self.get('auto_build', None):
+            self.pop('auto_build')
+            self._auto_build()
+
         if "type" in self:
             constructor = self["type"]
             params = dict(**self)
             del params["type"]
             params.update(kwds)
-            debug(f"Calling DictLike(*{args}, **{params})", level=DEBUG_LEVEL_CORE)
+            debug(
+                f"Calling DictLike(*{args}, **{params})", level=DEBUG_LEVEL_CORE)
             return constructor(*args, **params)
         else:
-            raise AttributeError(f"Not callable as no type is availible: {self}")
+            raise AttributeError(
+                f"Not callable as no type is availible: {self}")
 
     @staticmethod
     def from_dict(obj, ignore_non_dict=False):
@@ -95,7 +114,8 @@ class DictLike(dict):
             if ignore_non_dict:
                 return obj
             else:
-                raise TypeError(f"DictLike.from_dict expected a dict as input type but got {type(obj)}.")
+                raise TypeError(
+                    f"DictLike.from_dict expected a dict as input type but got {type(obj)}.")
 
     @staticmethod
     def try_build(obj, *args: Any, **kwds: Any):
