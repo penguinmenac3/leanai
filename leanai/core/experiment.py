@@ -52,6 +52,7 @@ class Experiment(pl.LightningModule):
         version: str = get_timestamp(),
         example_input: Optional[Union[Tensor, Tuple[Tensor]]] = None,
         loss: Optional[Callable] = None,
+        metrics: Optional[Dict[str, Callable]] = None,
         build_optimizer: Optional[Callable] = None,
         build_lr_scheduler: Optional[Callable] = None,
         checkpoint: str = None,
@@ -68,6 +69,7 @@ class Experiment(pl.LightningModule):
                 model=MyModel(),
                 output_path="logs/Results",
                 loss=MyLoss(),
+                metrics=dict(foo=MyMetric(), bar=OtherMetric()),
                 build_optimizer=DictLike(
                     type=SGD,
                     lr=1e-3,  # all arguments except model.params()
@@ -96,6 +98,7 @@ class Experiment(pl.LightningModule):
             self.predict(*self.example_input_array)
 
         self.loss = loss
+        self.metrics = metrics
         self.build_optimizer = build_optimizer
         self.build_lr_scheduler = build_lr_scheduler
 
@@ -276,6 +279,11 @@ class Experiment(pl.LightningModule):
         prediction = self(*feature)
         loss = self.loss(prediction, target)
         self.log('loss/total', loss, sync_dist=True)
+        if self.metrics is not None:
+            for k, metric in self.metrics.items():
+                val = metric(prediction, target)
+                if val is not None:
+                    self.log(f"metric/{k}", val, sync_dist=True)
         return loss
 
     def test_step(self, batch, batch_idx):
