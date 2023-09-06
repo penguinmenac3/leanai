@@ -15,11 +15,9 @@ import traceback
 import torch
 import numpy as np
 from torch.utils.data import DataLoader as _DataLoader
-from torch.utils.data import DataLoader2 as _DataLoader2
 from torch.utils.data.datapipes.datapipe import IterDataPipe
 from torch.utils.data._utils.collate import default_collate_err_msg_format, default_collate
 from torch.utils.data import IterableDataset as _IterableDataset
-from torch._six import string_classes
 
 from leanai.core.logging import debug, DEBUG_LEVEL_API
 
@@ -98,7 +96,7 @@ def _default_collate(batch):
         return torch.tensor(batch, dtype=torch.float64)
     elif isinstance(elem, int):
         return torch.tensor(batch)
-    elif isinstance(elem, string_classes):
+    elif isinstance(elem, str):
         return batch
     elif isinstance(elem, collections.abc.Mapping):
         return {key: _default_collate([d[key] for d in batch]) for key in elem}
@@ -152,26 +150,15 @@ class LeanaiDataLoader(Iterable):
         self.device = device
         if isinstance(dataset, _IterableDataset):
             shuffle = False
-        if isinstance(self.dataset, IterDataPipe):
-            self.native_dataloader = _DataLoader2(
-                dataset,
-                batch_size=batch_size,
-                shuffle=shuffle,
-                num_workers=num_workers,
-                drop_last=True,
-                pin_memory=True,
-                collate_fn=collate_fn
-            )
-        else:
-            self.native_dataloader = _DataLoader(
-                dataset,
-                batch_size=batch_size,
-                shuffle=shuffle,
-                num_workers=num_workers,
-                drop_last=True,
-                pin_memory=True,
-                collate_fn=collate_fn
-            )
+        self.native_dataloader = _DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            drop_last=True,
+            pin_memory=True,
+            collate_fn=collate_fn
+        )
 
     def __iter__(self) -> Iterator:
         class _TensorDataloaderIterator(Iterator):

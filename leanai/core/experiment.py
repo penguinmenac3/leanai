@@ -204,7 +204,7 @@ class Experiment(pl.LightningModule):
             accelerator="gpu",
             devices=gpus,
             num_nodes=nodes,
-            strategy="ddp" if gpus != 1 or nodes > 1 else None,
+            strategy="ddp" if gpus != 1 or nodes > 1 else "auto",
             callbacks=callbacks
         )
         trainer_args.update(**kwargs)
