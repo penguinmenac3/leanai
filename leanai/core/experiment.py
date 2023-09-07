@@ -91,11 +91,10 @@ class Experiment(pl.LightningModule):
         self.version = version
         if isinstance(example_input, Tensor):
             example_input = (example_input,)
-        self.example_input_array = example_input
 
-        if self.example_input_array is not None:
+        if example_input is not None:
             debug("Initializing model", level=DEBUG_LEVEL_CORE)
-            self.predict(*self.example_input_array)
+            self.predict(*example_input)
 
         self.loss = loss
         self.metrics = metrics
@@ -104,7 +103,7 @@ class Experiment(pl.LightningModule):
 
         self.checkpoint = self._find_checkpoint(checkpoint)
         if self.checkpoint is not None:
-            if self.example_input_array is None and checkpoint is not None:
+            if example_input is None and checkpoint is not None:
                 raise RuntimeError("Found checkpoint but cannot load it. You must provide `example_input`, so that the model canbe initialized and the checkpoint loaded correctly.")
             else:
                 self.load_state_dict(
@@ -144,7 +143,7 @@ class Experiment(pl.LightningModule):
         if "logger" not in kwargs:
             kwargs["logger"] = TensorBoardLogger(
                 save_dir=self.output_path, version=self.version, name="",
-                log_graph=self.example_input_array is not None
+                log_graph=False  # Broken anyways...
             )
             callbacks.append(kwargs["logger"])
         trainer = self._get_trainer(epochs, callbacks + Experiment.DEFAULT_CALLBACKS, gpus, nodes, **kwargs)
