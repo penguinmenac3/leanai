@@ -56,6 +56,7 @@ class Experiment(pl.LightningModule):
         build_optimizer: Optional[Callable] = None,
         build_lr_scheduler: Optional[Callable] = None,
         checkpoint: str = None,
+        log_code: bool = True,
     ):
         """
         An experiment allows you to fit models to data and evaluate it.
@@ -110,7 +111,7 @@ class Experiment(pl.LightningModule):
                     pl_load(self.checkpoint, map_location=lambda storage, loc: storage)['state_dict']
                 )
         
-        set_logger(os.path.join(output_path, version), log_code=True)
+        set_logger(os.path.join(output_path, version), log_code=log_code)
 
     def fit(
         self,
