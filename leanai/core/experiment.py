@@ -261,12 +261,14 @@ class Experiment(pl.LightningModule):
         """
         (internal of pytorch_lightning)
         """
+        self.loss.validation = False
         return self.trainval_step(batch, batch_idx)
 
     def validation_step(self, batch, batch_idx):
         """
         (internal of pytorch_lightning)
         """
+        self.loss.validation = True
         return self.trainval_step(batch, batch_idx)
 
     def trainval_step(self, batch, batch_idx):
